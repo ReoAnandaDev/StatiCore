@@ -546,13 +546,10 @@ foreach ($students as $student) {
 
         /* Responsive Design */
         @media (max-width: 768px) {
-
-            /* Sidebar */
             .sidebar {
                 position: fixed;
                 top: 0;
                 left: -280px;
-                /* Sembunyikan di luar layar */
                 width: 280px;
                 height: 100vh;
                 z-index: 1000;
@@ -563,7 +560,6 @@ foreach ($students as $student) {
                 left: 0;
             }
 
-            /* Overlay untuk tutup sidebar */
             .sidebar-overlay {
                 display: none;
                 position: fixed;
@@ -575,13 +571,11 @@ foreach ($students as $student) {
                 z-index: 999;
             }
 
-            /* Main content untuk mobile */
             .content-wrapper {
                 margin-left: 0 !important;
                 padding: 16px;
             }
 
-            /* Tombol menu mobile */
             .mobile-menu-btn {
                 display: block;
                 position: fixed;
@@ -600,7 +594,6 @@ foreach ($students as $student) {
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
             }
 
-            /* Grid statistik */
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 16px;
@@ -618,12 +611,10 @@ foreach ($students as $student) {
                 font-size: 12px;
             }
 
-            /* Kartu informasi quiz */
             .quiz-info-grid {
                 grid-template-columns: 1fr;
             }
 
-            /* Tabel jawaban siswa */
             .student-section {
                 overflow-x: auto;
             }
@@ -646,7 +637,6 @@ foreach ($students as $student) {
                 width: 100%;
             }
 
-            /* Tombol back */
             .btn-secondary {
                 width: 100%;
                 justify-content: center;
@@ -680,14 +670,87 @@ foreach ($students as $student) {
                 font-size: 14px;
             }
         }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 260px;
+                z-index: 1050;
+                background: linear-gradient(135deg, var(--primary), var(--secondary));
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(.4, 0, .2, 1);
+                box-shadow: 2px 0 16px rgba(44, 82, 130, 0.08);
+                display: block;
+            }
+
+            .sidebar.drawer-open {
+                transform: translateX(0);
+            }
+
+            .sidebar .p-3 {
+                padding-top: 2.5rem !important;
+            }
+
+            .sidebar-backdrop {
+                display: block;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.25);
+                z-index: 1049;
+                opacity: 1;
+                transition: opacity 0.3s;
+            }
+
+            .content-wrapper,
+            .p-4 {
+                margin-left: 0 !important;
+                padding: 16px !important;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 1100;
+                background: var(--primary);
+                color: #fff;
+                border: none;
+                border-radius: 50%;
+                width: 44px;
+                height: 44px;
+                font-size: 1.5rem;
+                box-shadow: 0 2px 8px rgba(44, 82, 130, 0.08);
+            }
+        }
+
+        @media (max-width: 576px) {
+
+            .card,
+            .card-body,
+            .card-header {
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+            }
+        }
     </style>
 </head>
 
 <body>
+    <button class="mobile-menu-toggle d-lg-none" id="drawerToggle" aria-label="Buka menu">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div id="sidebarBackdrop" class="sidebar-backdrop" style="display:none;"></div>
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0 sidebar">
+            <div class="col-md-3 col-lg-2 px-0 sidebar" id="drawerSidebar">
                 <div class="p-3">
                     <h4><i class="fas fa-chart-line me-2"></i>StatiCore</h4>
                     <hr>
@@ -919,6 +982,35 @@ foreach ($students as $student) {
                             });
                         });
                     }
+
+                    // Drawer sidebar logic
+                    const drawerToggle = document.getElementById('drawerToggle');
+                    const sidebar = document.getElementById('drawerSidebar');
+                    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+                    function openDrawer() {
+                        sidebar.classList.add('drawer-open');
+                        sidebarBackdrop.style.display = 'block';
+                    }
+                    function closeDrawer() {
+                        sidebar.classList.remove('drawer-open');
+                        sidebarBackdrop.style.display = 'none';
+                    }
+                    drawerToggle.addEventListener('click', function () {
+                        openDrawer();
+                    });
+                    sidebarBackdrop.addEventListener('click', function () {
+                        closeDrawer();
+                    });
+                    // Close drawer on menu click (mobile only)
+                    sidebar.querySelectorAll('.nav-link').forEach(function (link) {
+                        link.addEventListener('click', function () {
+                            if (window.innerWidth < 992) closeDrawer();
+                        });
+                    });
+                    // Close drawer on resize to desktop
+                    window.addEventListener('resize', function () {
+                        if (window.innerWidth >= 992) closeDrawer();
+                    });
                 });
             </script>
 </body>

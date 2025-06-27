@@ -87,7 +87,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     INSERT INTO pengumpulan_tugas (tugas_id, siswa_id, file_path, catatan, waktu_pengumpulan)
                                     VALUES (?, ?, ?, ?, NOW())
                                 ");
-                                $stmt->execute([$tugas_id, $_SESSION['user_id'], 'uploads/tugas/' . $file_name, $catatan]);
+                                // Simpan path relatif dari direktori utama aplikasi
+                                $db_file_path = 'uploads/tugas/' . $file_name;
+                                $stmt->execute([$tugas_id, $_SESSION['user_id'], $db_file_path, $catatan]);
                                 $message = "Tugas berhasil dikumpulkan";
                             } catch (PDOException $e) {
                                 $message = "Error: " . $e->getMessage();
@@ -127,47 +129,24 @@ $pengumpulan = $stmt->fetch();
         :root {
             --primary: #2c5282;
             --secondary: #4299e1;
-            --accent: #f6ad55;
-            --light: #f7fafc;
-            --white: #ffffff;
-            --gray-100: #f8f9fa;
-            --gray-200: #e9ecef;
-            --gray-300: #dee2e6;
-            --gray-400: #ced4da;
-            --gray-500: #adb5bd;
-            --gray-600: #6c757d;
-            --gray-700: #495057;
-            --gray-800: #343a40;
-            --gray-900: #212529;
-            --success: #198754;
-            --danger: #dc3545;
-            --warning: #ffc107;
-            --info: #0dcaf0;
+            --gray-50: #F9FAFB;
+            --gray-800: #1F2937;
+            --success: #10B981;
+            --info: #3B82F6;
             --border-radius-sm: 8px;
-            --border-radius-md: 12px;
             --border-radius-lg: 16px;
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: var(--gray-100);
-            color: var(--primary);
+            background-color: var(--gray-50);
+            color: var(--gray-800);
         }
 
-        .Title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 30px;
-            color: var(--primary);
-            padding: 12px;
-        }
-
-        /* Sidebar */
         .sidebar {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             min-height: 100vh;
             transition: all 0.3s ease;
-            padding: 12px;
         }
 
         .sidebar .nav-link {
@@ -184,244 +163,292 @@ $pengumpulan = $stmt->fetch();
         .sidebar .nav-link.active {
             color: white;
             background-color: rgba(255, 255, 255, 0.1);
-            transform: translateX(4px);
         }
 
-        .sidebar h4 {
-            font-weight: 600;
-            padding-left: 1rem;
-            color: white;
-        }
-
-        /* Cards */
         .card {
-            background: var(--white);
-            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             border-radius: var(--border-radius-lg);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            margin-bottom: 24px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            transform: translateY(-2px);
+            border: none;
         }
 
         .card-header {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: var(--white);
-            padding: 20px 24px;
-            border-bottom: none;
+            color: white;
         }
 
-        .btn-primary {
-            background: var(--primary);
-            border: none;
-            padding: 10px 20px;
-            border-radius: var(--border-radius-sm);
+        .main-content {
+            padding: 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* BARU: CSS untuk Hamburger & Overlay */
+        .mobile-menu-toggle {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
             transition: all 0.3s ease;
         }
 
-        .btn-primary:hover {
-            background: var(--secondary);
-            transform: translateY(-2px);
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
         }
 
-        .badge {
-            padding: 8px 12px;
-            border-radius: var(--border-radius-sm);
-            font-weight: 500;
-        }
+        @media (max-width: 767.98px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                height: 100%;
+                width: 280px;
+                z-index: 1000;
+            }
 
-        .badge-success {
-            background-color: var(--success);
-        }
+            .sidebar.active {
+                left: 0;
+            }
 
-        .badge-warning {
-            background-color: var(--warning);
-        }
+            .main-content {
+                width: 100%;
+                margin-left: 0 !important;
+                padding: 1rem;
+            }
 
-        .badge-danger {
-            background-color: var(--danger);
-        }
+            .mobile-menu-toggle {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 1100;
+                background-color: var(--primary);
+                color: white;
+                border: none;
+                border-radius: 50%;
+                width: 44px;
+                height: 44px;
+                font-size: 1rem;
+            }
 
-        .badge-info {
-            background-color: var(--info);
+            .page-title {
+                margin-top: 3.5rem;
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
 
 <body>
+    <button class="mobile-menu-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar-overlay"></div>
+
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0 position-fixed sidebar">
-                <h4 class="mt-4 mb-4">StatiCore</h4>
-                <nav class="nav flex-column">
-                    <a class="nav-link" href="dashboard.php">
-                        <i class="fas fa-home"></i>
-                        Dashboard
-                    </a>
-                    <a class="nav-link" href="kelas.php">
-                        <i class="fas fa-chalkboard"></i>
-                        Kelas
-                    </a>
-                    <a class="nav-link" href="materi.php">
-                        <i class="fas fa-book"></i>
-                        Materi
-                    </a>
-                    <a class="nav-link" href="quiz.php">
-                        <i class="fas fa-question-circle"></i>
-                        Quiz
-                    </a>
-                    <a class="nav-link active" href="tugas.php">
-                        <i class="fas fa-tasks"></i>
-                        Tugas
-                    </a>
-                    <a class="nav-link" href="nilai.php">
-                        <i class="fas fa-star"></i>
-                        Nilai
-                    </a>
-                </nav>
+            <div id="sidebar" class="col-md-3 col-lg-2 px-0 sidebar">
+                <div class="p-3">
+                    <h4 class="px-2 my-3"><i class="fas fa-chart-line me-2"></i>StatiCore</h4>
+                    <hr class="text-white">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.php"><i class="fas fa-home me-2"></i>Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="materi.php"><i class="fas fa-book me-2"></i>Materi</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="quiz.php"><i class="fas fa-question-circle me-2"></i>Quiz</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="tugas.php"><i class="fas fa-tasks me-2"></i>Tugas</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="nilai.php"><i class="fas fa-star me-2"></i>Nilai</a>
+                        </li>
+                        <li class="nav-item mt-auto">
+                            <a class="nav-link" href="../../logout.php" id="logoutBtn"><i
+                                    class="fas fa-sign-out-alt me-2"></i>Logout</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 ms-auto px-4 py-3">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="Title mb-0">Kumpul Tugas</h2>
-                    <a href="tugas.php" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Kembali
-                    </a>
-                </div>
+            <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
+                <h1 class="page-title">Pengumpulan Tugas</h1>
 
                 <?php if ($message): ?>
                     <div class="alert alert-info alert-dismissible fade show" role="alert">
-                        <?php echo $message; ?>
+                        <?php echo htmlspecialchars($message); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 <?php endif; ?>
 
-                <!-- Task Details -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Informasi Tugas</h5>
+                        <h5 class="card-title mb-0"><i class="fas fa-file-alt me-2"></i>Informasi Tugas</h5>
                     </div>
                     <div class="card-body">
+                        <h4 class="mb-3"><?php echo htmlspecialchars($tugas['judul']); ?></h4>
                         <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Judul:</strong> <?php echo htmlspecialchars($tugas['judul']); ?></p>
-                                <p><strong>Jenis Tugas:</strong> <?php echo htmlspecialchars($tugas['jenis_tugas']); ?>
-                                </p>
-                                <p><strong>Kelas:</strong>
-                                    <?php echo htmlspecialchars($tugas['nama_kelas'] . ' (' . $tugas['tahun_ajaran'] . ')'); ?>
-                                </p>
+                            <div class="col-md-6 mb-2"><strong>Kelas:</strong>
+                                <?php echo htmlspecialchars($tugas['nama_kelas'] . ' (' . $tugas['tahun_ajaran'] . ')'); ?>
                             </div>
-                            <div class="col-md-6">
-                                <p><strong>Batas Pengumpulan:</strong>
-                                    <?php echo date('d M Y H:i', strtotime($tugas['batas_pengumpulan'])); ?></p>
-                                <p><strong>Dosen:</strong> <?php echo htmlspecialchars($tugas['nama_guru']); ?></p>
+                            <div class="col-md-6 mb-2"><strong>Dosen:</strong>
+                                <?php echo htmlspecialchars($tugas['nama_guru']); ?></div>
+                            <div class="col-md-6 mb-2"><strong>Jenis:</strong> <span
+                                    class="badge bg-secondary"><?php echo htmlspecialchars($tugas['jenis_tugas']); ?></span>
+                            </div>
+                            <div class="col-md-6 mb-2"><strong>Batas Waktu:</strong> <span
+                                    class="badge bg-danger"><?php echo date('d M Y, H:i', strtotime($tugas['batas_pengumpulan'])); ?></span>
                             </div>
                         </div>
-                        <div class="mt-3">
-                            <p><strong>Deskripsi:</strong></p>
-                            <p><?php echo nl2br(htmlspecialchars($tugas['deskripsi'])); ?></p>
-                        </div>
+                        <hr>
+                        <p><strong>Deskripsi:</strong></p>
+                        <p><?php echo nl2br(htmlspecialchars($tugas['deskripsi'])); ?></p>
+                        <?php if ($tugas['file_path']): ?>
+                            <a href="../../<?php echo htmlspecialchars($tugas['file_path']); ?>" target="_blank"
+                                class="btn btn-info mt-2">
+                                <i class="fas fa-download me-2"></i> Download Lampiran Tugas
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
 
                 <?php if ($pengumpulan): ?>
-                    <!-- Submission Details -->
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="card-title mb-0">Status Pengumpulan</h5>
+                            <h5 class="card-title mb-0"><i class="fas fa-check-circle me-2"></i>Status Pengumpulan Anda</h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p><strong>Waktu Pengumpulan:</strong>
-                                        <?php echo date('d M Y H:i', strtotime($pengumpulan['waktu_pengumpulan'])); ?></p>
-                                    <p><strong>Status:</strong>
-                                        <?php
-                                        $status_class = '';
-                                        $status_text = '';
-                                        switch ($pengumpulan['status']) {
-                                            case 'dikumpulkan':
-                                                $status_class = 'info';
-                                                $status_text = 'Dikumpulkan';
-                                                break;
-                                            case 'dinilai':
-                                                $status_class = 'success';
-                                                $status_text = 'Dinilai';
-                                                break;
-                                            case 'ditolak':
-                                                $status_class = 'danger';
-                                                $status_text = 'Ditolak';
-                                                break;
-                                        }
-                                        ?>
-                                        <span
-                                            class="badge bg-<?php echo $status_class; ?>"><?php echo $status_text; ?></span>
-                                    </p>
-                                    <?php if ($pengumpulan['nilai']): ?>
-                                        <p><strong>Nilai:</strong> <?php echo $pengumpulan['nilai']; ?></p>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="col-md-6">
-                                    <p><strong>File:</strong></p>
-                                    <a href="<?php echo htmlspecialchars($pengumpulan['file_path']); ?>"
-                                        class="btn btn-info" target="_blank">
-                                        <i class="fas fa-download"></i> Download File
-                                    </a>
-                                    <?php if ($pengumpulan['catatan']): ?>
-                                        <p class="mt-3"><strong>Catatan:</strong></p>
-                                        <p><?php echo nl2br(htmlspecialchars($pengumpulan['catatan'])); ?></p>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
+                            <p><strong>Waktu Pengumpulan:</strong>
+                                <?php echo date('d M Y, H:i', strtotime($pengumpulan['waktu_pengumpulan'])); ?></p>
+                            <p><strong>Status:</strong>
+                                <?php
+                                $status_class = 'secondary';
+                                if ($pengumpulan['status'] == 'dinilai')
+                                    $status_class = 'success';
+                                if (strtotime($pengumpulan['waktu_pengumpulan']) > strtotime($tugas['batas_pengumpulan']))
+                                    $status_text = 'Terlambat';
+                                else
+                                    $status_text = 'Tepat Waktu';
+                                ?>
+                                <span
+                                    class="badge bg-<?php echo $status_class; ?>"><?php echo htmlspecialchars(ucfirst($pengumpulan['status'])); ?>
+                                    (<?php echo $status_text; ?>)</span>
+                            </p>
+                            <?php if ($pengumpulan['nilai']): ?>
+                                <p><strong>Nilai:</strong> <span
+                                        class="badge bg-primary fs-5"><?php echo htmlspecialchars($pengumpulan['nilai']); ?></span>
+                                </p>
+                            <?php endif; ?>
+                            <p><strong>File Anda:</strong>
+                                <a href="../../<?php echo htmlspecialchars($pengumpulan['file_path']); ?>" target="_blank"
+                                    class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i> Lihat File
+                                </a>
+                            </p>
+                            <?php if ($pengumpulan['catatan']): ?>
+                                <p><strong>Catatan Anda:</strong><br><?= nl2br(htmlspecialchars($pengumpulan['catatan'])); ?>
+                                </p>
+                            <?php endif; ?>
                             <?php if ($pengumpulan['feedback']): ?>
-                                <div class="mt-3">
-                                    <p><strong>Feedback Dosen:</strong></p>
-                                    <p><?php echo nl2br(htmlspecialchars($pengumpulan['feedback'])); ?></p>
-                                </div>
+                                <hr>
+                                <p><strong>Feedback Dosen:</strong><br><?= nl2br(htmlspecialchars($pengumpulan['feedback'])); ?>
+                                </p>
                             <?php endif; ?>
                         </div>
                     </div>
                 <?php else: ?>
-                    <!-- Submission Form -->
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="card-title mb-0">Kumpul Tugas</h5>
+                            <h5 class="card-title mb-0"><i class="fas fa-upload me-2"></i>Form Pengumpulan</h5>
                         </div>
                         <div class="card-body">
                             <form action="" method="POST" enctype="multipart/form-data">
                                 <input type="hidden" name="action" value="submit_tugas">
-
                                 <div class="mb-3">
-                                    <label for="file" class="form-label">File Tugas</label>
+                                    <label for="file" class="form-label"><strong>Upload File Jawaban</strong></label>
                                     <input type="file" class="form-control" id="file" name="file" required>
-                                    <div class="form-text">Format yang didukung: PDF, Word, Excel, PowerPoint, ZIP (Max:
-                                        10MB)</div>
+                                    <div class="form-text">Format: PDF, Word, Excel, PowerPoint, ZIP.</div>
                                 </div>
-
                                 <div class="mb-3">
-                                    <label for="catatan" class="form-label">Catatan (Opsional)</label>
-                                    <textarea class="form-control" id="catatan" name="catatan" rows="3"></textarea>
+                                    <label for="catatan" class="form-label"><strong>Catatan (Opsional)</strong></label>
+                                    <textarea class="form-control" id="catatan" name="catatan" rows="3"
+                                        placeholder="Tambahkan catatan untuk dosen..."></textarea>
                                 </div>
-
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-upload"></i> Kumpul Tugas
-                                </button>
+                                <button type="submit" class="btn btn-primary w-100">Kumpulkan Tugas</button>
                             </form>
                         </div>
                     </div>
                 <?php endif; ?>
-            </div>
+
+                <a href="tugas.php" class="btn btn-secondary mt-4"><i class="fas fa-arrow-left me-2"></i> Kembali</a>
+            </main>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // BARU: Logika untuk Hamburger Menu
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            const menuToggle = document.querySelector('.mobile-menu-toggle');
+
+            if (sidebar && overlay && menuToggle) {
+                const toggleSidebar = () => {
+                    sidebar.classList.toggle('active');
+                    overlay.classList.toggle('show');
+                };
+                menuToggle.addEventListener('click', toggleSidebar);
+                overlay.addEventListener('click', toggleSidebar);
+            }
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 767.98 && sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                    overlay.classList.remove('show');
+                }
+            });
+
+            // Logika untuk konfirmasi logout
+            const logoutLink = document.getElementById('logoutBtn');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Apakah Anda ingin keluar?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: 'var(--primary)',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Ya, Keluar',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = logoutLink.href;
+                        }
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

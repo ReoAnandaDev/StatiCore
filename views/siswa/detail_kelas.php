@@ -46,11 +46,8 @@ $materi = $stmt->fetchAll();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail Kelas - StatiCore</title>
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Bootstrap 5.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -226,10 +223,6 @@ $materi = $stmt->fetchAll();
             background-color: var(--gray-50);
         }
 
-        .table tbody tr:nth-child(even) {
-            background-color: rgba(248, 249, 250, 0.5);
-        }
-
         /* Empty State */
         .empty-state {
             text-align: center;
@@ -243,16 +236,6 @@ $materi = $stmt->fetchAll();
             opacity: 0.5;
         }
 
-        .empty-state h6 {
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .empty-state p {
-            font-size: 0.875rem;
-            margin: 0;
-        }
-
         /* Stats Grid */
         .stats-grid {
             display: grid;
@@ -261,99 +244,12 @@ $materi = $stmt->fetchAll();
             margin-bottom: 2rem;
         }
 
-        .stat-card {
-            background: var(--white);
-            border-radius: var(--border-radius-lg);
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border-left: 4px solid var(--primary);
-            transition: all 0.3s ease;
+        /* Responsive Styles */
+        .mobile-menu-toggle {
+            display: none;
+            /* Sembunyikan di desktop */
         }
 
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: var(--border-radius-md);
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 0.25rem;
-        }
-
-        .stat-label {
-            color: var(--gray-600);
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        /* Buttons */
-        .btn {
-            border-radius: var(--border-radius-sm);
-            font-weight: 500;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            font-size: 0.875rem;
-            min-height: 44px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: var(--white);
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(135deg, var(--secondary), var(--primary));
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-secondary {
-            background: var(--gray-600);
-            color: var(--white);
-        }
-
-        .btn-secondary:hover {
-            background: var(--gray-700);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn i {
-            margin-right: 0.5rem;
-        }
-
-        /* Badge */
-        .badge {
-            background: var(--primary);
-            color: var(--white);
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--border-radius-sm);
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        /* Overlay for mobile sidebar */
         .sidebar-overlay {
             position: fixed;
             top: 0;
@@ -372,52 +268,16 @@ $materi = $stmt->fetchAll();
             visibility: visible;
         }
 
-        /* Responsive Styles */
-        @media (max-width: 992px) {
-            .sidebar .nav-link {
-                font-size: 0.9rem;
-                padding: 0.5rem 1rem;
-            }
-
-            .Title {
-                font-size: 1.25rem;
-            }
-
-            .class-info-list li {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .class-info-label,
-            .class-info-value {
-                font-size: 0.9rem;
-            }
-
-            .card-body {
-                padding: 1rem;
-            }
-
-            .btn {
-                font-size: 0.85rem;
-                padding: 0.6rem 1rem;
-            }
-
-            .form-control,
-            .form-select {
-                font-size: 0.85rem;
-                padding: 0.5rem 0.75rem;
-            }
-        }
-
-        @media (max-width: 768px) {
+        @media (max-width: 767.98px) {
             .sidebar {
                 position: fixed;
-                left: -250px;
+                left: -280px;
+                /* Lebar sidebar */
                 top: 0;
-                bottom: 0;
-                width: 250px;
+                height: 100%;
+                width: 280px;
                 z-index: 1000;
-                transition: all 0.3s ease-in-out;
+                transition: left 0.3s ease-in-out;
             }
 
             .sidebar.active {
@@ -426,7 +286,7 @@ $materi = $stmt->fetchAll();
 
             .content-wrapper {
                 margin-left: 0 !important;
-                padding: 1rem;
+                width: 100%;
             }
 
             .mobile-menu-toggle {
@@ -435,7 +295,7 @@ $materi = $stmt->fetchAll();
                 right: 20px;
                 bottom: 20px;
                 z-index: 1001;
-                background-color: #3B3B1A;
+                background-color: var(--primary);
                 color: white;
                 border: none;
                 border-radius: 50%;
@@ -445,66 +305,39 @@ $materi = $stmt->fetchAll();
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             }
 
-            .stat-card {
+            .class-info-list li {
                 flex-direction: column;
-                align-items: center;
-                text-align: center;
-            }
-
-            .stat-icon {
-                margin-bottom: 0.5rem;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .Title {
-                font-size: 1.1rem;
-            }
-
-            .class-info-label,
-            .class-info-value {
-                font-size: 0.85rem;
-            }
-
-            .btn-sm {
-                font-size: 0.75rem;
-                padding: 0.4rem 0.8rem;
-            }
-
-            .card-body {
-                padding: 0.75rem;
-            }
-
-            .table-container table tbody tr td::before {
-                font-size: 0.75rem;
-            }
-
-            .alert {
-                font-size: 0.9rem;
-                padding: 0.75rem 1rem;
+                align-items: flex-start;
+                gap: 0.25rem;
             }
         }
     </style>
 </head>
 
 <body>
+    <button class="mobile-menu-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar-overlay"></div>
+
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0 sidebar">
+            <div id="sidebar" class="col-md-3 col-lg-2 px-0 sidebar">
                 <div class="p-3">
                     <h4><i class="fas fa-chart-line me-2"></i>StatiCore</h4>
-                    <hr>
+                    <hr class="text-white">
                     <ul class="nav flex-column">
                         <li class="nav-item"><a class="nav-link" href="dashboard.php"><i
                                     class="fas fa-home me-2"></i>Dashboard</a></li>
                         <li class="nav-item"><a class="nav-link" href="materi.php"><i
                                     class="fas fa-book me-2"></i>Materi</a></li>
                         <li class="nav-item"><a class="nav-link" href="quiz.php"><i
-                                    class="fas fa-tasks me-2"></i>Quiz</a></li>
+                                    class="fas fa-question-circle me-2"></i>Quiz</a></li>
+                        <li class="nav-item"><a class="nav-link" href="tugas.php"><i
+                                    class="fas fa-tasks me-2"></i>Tugas</a></li>
                         <li class="nav-item"><a class="nav-link" href="nilai.php"><i
                                     class="fas fa-chart-bar me-2"></i>Nilai</a></li>
-                        <li class="nav-item">
+                        <li class="nav-item mt-auto">
                             <a class="nav-link" href="../../logout.php" id="logoutBtn">
                                 <i class="fas fa-sign-out-alt me-2"></i>Logout
                             </a>
@@ -512,108 +345,55 @@ $materi = $stmt->fetchAll();
                     </ul>
                 </div>
             </div>
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 p-4 content-wrapper">
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 p-4 content-wrapper">
                 <h2 class="mb-4 Title">Detail Kelas: <?php echo htmlspecialchars($kelas['nama_kelas']); ?>
                     (<?php echo htmlspecialchars($kelas['tahun_ajaran']); ?>)</h2>
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Informasi Kelas</h5>
-                        <ul class="list-unstyled mb-0">
-                            <li><strong>Nama Kelas:</strong> <?php echo htmlspecialchars($kelas['nama_kelas']); ?></li>
-                            <li><strong>Tahun Ajaran:</strong> <?php echo htmlspecialchars($kelas['tahun_ajaran']); ?>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- Stats Overview -->
-                <div class="stats-grid fade-in-up">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-number"><?php echo count($siswa); ?></div>
-                        <div class="stat-label">Total Mahasiswa/i</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-tasks"></i>
-                        </div>
-                        <div class="stat-number"><?php echo count($quizzes); ?></div>
-                        <div class="stat-label">Quiz Tersedia</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-book"></i>
-                        </div>
-                        <div class="stat-number"><?php echo count($materi); ?></div>
-                        <div class="stat-label">Materi Pembelajaran</div>
-                    </div>
-                </div>
 
-                <!-- Class Information -->
-                <div class="card class-info-card fade-in-up">
-                    <div class="card-header">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Informasi Kelas
-                    </div>
-                    <div class="card-body">
-                        <ul class="class-info-list">
-                            <li>
-                                <span class="class-info-label">Nama Kelas</span>
-                                <span
-                                    class="class-info-value"><?php echo htmlspecialchars($kelas['nama_kelas']); ?></span>
-                            </li>
-                            <li>
-                                <span class="class-info-label">Tahun Ajaran</span>
-                                <span
-                                    class="class-info-value"><?php echo htmlspecialchars($kelas['tahun_ajaran']); ?></span>
-                            </li>
-                            <li>
-                                <span class="class-info-label">Status</span>
-                                <span class="class-info-value">
-                                    <span class="badge"
-                                        style="background: var(--accent-green); color: var(--white); padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem;">
-                                        Aktif
-                                    </span>
-                                </span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Content Grid -->
-                <div class="row">
-                    <!-- Students List -->
-                    <div class="col-lg-6 mb-4">
-                        <div class="card fade-in-up">
-                            <div class="card-header">
-                                <i class="fas fa-users me-2"></i>
-                                Daftar Mahasiswa/i
+                <div class="stats-grid">
+                    <div class="stat-card card">
+                        <div class="card-body d-flex align-items-center">
+                            <i class="fas fa-users fa-2x text-primary me-3"></i>
+                            <div>
+                                <div class="stat-number"><?php echo count($siswa); ?></div>
+                                <div class="stat-label">Total Mahasiswa</div>
                             </div>
+                        </div>
+                    </div>
+                    <div class="stat-card card">
+                        <div class="card-body d-flex align-items-center">
+                            <i class="fas fa-question-circle fa-2x text-info me-3"></i>
+                            <div>
+                                <div class="stat-number"><?php echo count($quizzes); ?></div>
+                                <div class="stat-label">Quiz Tersedia</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card card">
+                        <div class="card-body d-flex align-items-center">
+                            <i class="fas fa-book fa-2x text-success me-3"></i>
+                            <div>
+                                <div class="stat-number"><?php echo count($materi); ?></div>
+                                <div class="stat-label">Materi</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header"><i class="fas fa-users me-2"></i>Daftar Mahasiswa/i</div>
                             <div class="card-body p-0">
                                 <?php if (!empty($siswa)): ?>
-                                    <div class="table-container">
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 60px;">No</th>
-                                                    <th>Nama Lengkap</th>
-                                                </tr>
-                                            </thead>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
                                             <tbody>
-                                                <?php foreach ($siswa as $i => $s): ?>
+                                                <?php foreach ($siswa as $s): ?>
                                                     <tr>
                                                         <td>
-                                                            <span
-                                                                style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--accent-green); color: var(--white); border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
-                                                                <?php echo $i + 1; ?>
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <div style="display: flex; align-items: center;">
-                                                                <div
-                                                                    style="width: 32px; height: 32px; background: var(--light-cream); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem; font-weight: 600; color: var(--primary-green);">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="avatar me-3">
                                                                     <?php echo strtoupper(substr($s['nama_lengkap'], 0, 1)); ?>
                                                                 </div>
                                                                 <?php echo htmlspecialchars($s['nama_lengkap']); ?>
@@ -625,53 +405,27 @@ $materi = $stmt->fetchAll();
                                         </table>
                                     </div>
                                 <?php else: ?>
-                                    <div class="empty-state">
-                                        <i class="fas fa-users"></i>
+                                    <div class="empty-state"><i class="fas fa-users"></i>
                                         <h6>Belum Ada Mahasiswa/i</h6>
-                                        <p>Kelas ini belum memiliki Mahasiswa/i yang terdaftar.</p>
                                     </div>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Quizzes List -->
                     <div class="col-lg-6 mb-4">
-                        <div class="card fade-in-up">
-                            <div class="card-header">
-                                <i class="fas fa-tasks me-2"></i>
-                                Daftar Quiz
-                            </div>
+                        <div class="card h-100">
+                            <div class="card-header"><i class="fas fa-question-circle me-2"></i>Daftar Quiz</div>
                             <div class="card-body p-0">
                                 <?php if (!empty($quizzes)): ?>
-                                    <div class="table-container">
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 60px;">No</th>
-                                                    <th>Judul Quiz</th>
-                                                    <th>Waktu Mulai</th>
-                                                </tr>
-                                            </thead>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
                                             <tbody>
-                                                <?php foreach ($quizzes as $i => $q): ?>
+                                                <?php foreach ($quizzes as $q): ?>
                                                     <tr>
-                                                        <td>
-                                                            <span
-                                                                style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--accent-green); color: var(--white); border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
-                                                                <?php echo $i + 1; ?>
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <div style="font-weight: 500;">
-                                                                <?php echo htmlspecialchars($q['judul']); ?>
-                                                            </div>
-                                                        </td>
-                                                        <td>
-                                                            <div style="font-size: 0.875rem; color: var(--gray-600);">
-                                                                <i class="fas fa-calendar-alt me-1"></i>
-                                                                <?php echo date('d/m/Y H:i', strtotime($q['waktu_mulai'])); ?>
-                                                            </div>
+                                                        <td><?php echo htmlspecialchars($q['judul']); ?></td>
+                                                        <td class="text-muted text-end">
+                                                            <small><?php echo date('d M Y', strtotime($q['waktu_mulai'])); ?></small>
                                                         </td>
                                                     </tr>
                                                 <?php endforeach; ?>
@@ -679,10 +433,8 @@ $materi = $stmt->fetchAll();
                                         </table>
                                     </div>
                                 <?php else: ?>
-                                    <div class="empty-state">
-                                        <i class="fas fa-tasks"></i>
+                                    <div class="empty-state"><i class="fas fa-question-circle"></i>
                                         <h6>Belum Ada Quiz</h6>
-                                        <p>Belum ada quiz yang tersedia untuk kelas ini.</p>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -690,52 +442,29 @@ $materi = $stmt->fetchAll();
                     </div>
                 </div>
 
-                <!-- Materials List -->
-                <div class="card fade-in-up">
-                    <div class="card-header">
-                        <i class="fas fa-book me-2"></i>
-                        Daftar Materi Pembelajaran
-                    </div>
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-book me-2"></i>Daftar Materi Pembelajaran</div>
                     <div class="card-body p-0">
                         <?php if (!empty($materi)): ?>
-                            <div class="table-container">
-                                <table class="table">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
                                     <thead>
                                         <tr>
-                                            <th style="width: 60px;">No</th>
                                             <th>Judul Materi</th>
                                             <th>Dosen Pengajar</th>
-                                            <th>Tanggal Upload</th>
+                                            <th>Tanggal</th>
+                                            <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($materi as $i => $m): ?>
+                                        <?php foreach ($materi as $m): ?>
                                             <tr>
+                                                <td><?php echo htmlspecialchars($m['judul']); ?></td>
+                                                <td><?php echo htmlspecialchars($m['guru_nama']); ?></td>
+                                                <td><?php echo date('d M Y', strtotime($m['created_at'])); ?></td>
                                                 <td>
-                                                    <span
-                                                        style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--accent-green); color: var(--white); border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
-                                                        <?php echo $i + 1; ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <div style="font-weight: 500; margin-bottom: 0.25rem;">
-                                                        <?php echo htmlspecialchars($m['judul']); ?>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div style="display: flex; align-items: center;">
-                                                        <div
-                                                            style="width: 32px; height: 32px; background: var(--primary-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem; font-weight: 600; color: var(--white); font-size: 0.75rem;">
-                                                            <?php echo strtoupper(substr($m['guru_nama'], 0, 1)); ?>
-                                                        </div>
-                                                        <?php echo htmlspecialchars($m['guru_nama']); ?>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div style="font-size: 0.875rem; color: var(--gray-600);">
-                                                        <i class="fas fa-calendar-alt me-1"></i>
-                                                        <?php echo date('d/m/Y H:i', strtotime($m['created_at'])); ?>
-                                                    </div>
+                                                    <a href="detail_materi.php?id=<?php echo $m['id']; ?>"
+                                                        class="btn btn-sm btn-info text-white"><i class="fas fa-eye"></i></a>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -743,267 +472,72 @@ $materi = $stmt->fetchAll();
                                 </table>
                             </div>
                         <?php else: ?>
-                            <div class="empty-state">
-                                <i class="fas fa-book"></i>
+                            <div class="empty-state"><i class="fas fa-book"></i>
                                 <h6>Belum Ada Materi</h6>
-                                <p>Belum ada materi pembelajaran yang tersedia untuk kelas ini.</p>
                             </div>
                         <?php endif; ?>
                     </div>
                 </div>
 
-                <!-- Action Buttons -->
                 <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <a href="dashboard.php" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i>
-                        Kembali ke Dashboard
-                    </a>
-                    <a href="materi.php" class="btn btn-primary">
-                        <i class="fas fa-book"></i>
-                        Lihat Semua Materi
-                    </a>
-                    <a href="quiz.php" class="btn btn-primary">
-                        <i class="fas fa-tasks"></i>
-                        Lihat Semua Quiz
-                    </a>
+                    <a href="dashboard.php" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Kembali</a>
                 </div>
-            </div>
+            </main>
         </div>
+    </div>
 
-        <script>
-            // Mobile Sidebar Toggle
-            function toggleSidebar() {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.querySelector('.sidebar-overlay');
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-                sidebar.classList.toggle('show');
+    <script>
+        /* MODIFIKASI: JavaScript untuk Hamburger Menu */
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            const menuToggle = document.querySelector('.mobile-menu-toggle');
+
+            const toggleSidebar = () => {
+                sidebar.classList.toggle('active');
                 overlay.classList.toggle('show');
+            };
+
+            if (menuToggle) {
+                menuToggle.addEventListener('click', toggleSidebar);
+            }
+            if (overlay) {
+                overlay.addEventListener('click', toggleSidebar);
             }
 
-            // Close sidebar when clicking on overlay
-            document.querySelector('.sidebar-overlay').addEventListener('click', function () {
-                toggleSidebar();
-            });
-
-            // Close sidebar on window resize if mobile
-            window.addEventListener('resize', function () {
-                if (window.innerWidth >= 768) {
-                    const sidebar = document.getElementById('sidebar');
-                    const overlay = document.querySelector('.sidebar-overlay');
-                    sidebar.classList.remove('show');
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 767.98) {
+                    sidebar.classList.remove('active');
                     overlay.classList.remove('show');
                 }
             });
 
-            // Add active class to current nav item
-            document.addEventListener('DOMContentLoaded', function () {
-                const currentPath = window.location.pathname;
-                const navLinks = document.querySelectorAll('.nav-link');
-
-                navLinks.forEach(link => {
-                    if (link.getAttribute('href') && currentPath.includes(link.getAttribute('href'))) {
-                        link.classList.add('active');
-                    }
-                });
-
-                // Add fade-in animation to cards
-                const cards = document.querySelectorAll('.card');
-                cards.forEach((card, index) => {
-                    card.style.animationDelay = `${index * 0.1}s`;
-                });
-            });
-
-            // Loading state simulation
-            function showLoadingState() {
-                const tables = document.querySelectorAll('.table tbody');
-                tables.forEach(table => {
-                    table.innerHTML = `
-                    <tr>
-                        <td colspan="100%">
-                            <div style="display: flex; align-items: center; justify-content: center; padding: 2rem;">
-                                <div style="width: 20px; height: 20px; border: 2px solid var(--gray-300); border-top: 2px solid var(--accent-green); border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.5rem;"></div>
-                                Memuat data...
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                });
-            }
-
-            // Add spin animation for loading
-            const style = document.createElement('style');
-            style.textContent = `
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        `;
-            document.head.appendChild(style);
-
-            // Smooth scroll behavior
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
+            // Script logout
+            const logoutLink = document.getElementById('logoutBtn');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function (e) {
                     e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }
-                });
-            });
-
-            // Add hover effects to table rows
-            document.addEventListener('DOMContentLoaded', function () {
-                const tableRows = document.querySelectorAll('.table tbody tr');
-                tableRows.forEach(row => {
-                    row.addEventListener('mouseenter', function () {
-                        this.style.transform = 'scale(1.01)';
-                        this.style.transition = 'all 0.2s ease';
-                    });
-
-                    row.addEventListener('mouseleave', function () {
-                        this.style.transform = 'scale(1)';
-                    });
-                });
-            });
-
-            // Add click ripple effect to buttons
-            document.querySelectorAll('.btn').forEach(button => {
-                button.addEventListener('click', function (e) {
-                    const ripple = document.createElement('span');
-                    const rect = button.getBoundingClientRect();
-                    const size = Math.max(rect.width, rect.height);
-                    const x = e.clientX - rect.left - size / 2;
-                    const y = e.clientY - rect.top - size / 2;
-
-                    ripple.style.cssText = `
-                    position: absolute;
-                    border-radius: 50%;
-                    transform: scale(0);
-                    animation: ripple 0.6s linear;
-                    background-color: rgba(255,255,255,0.5);
-                    width: ${size}px;
-                    height: ${size}px;
-                    left: ${x}px;
-                    top: ${y}px;
-                `;
-
-                    button.style.position = 'relative';
-                    button.style.overflow = 'hidden';
-                    button.appendChild(ripple);
-
-                    setTimeout(() => {
-                        ripple.remove();
-                    }, 600);
-                });
-            });
-
-            // Add ripple animation
-            const rippleStyle = document.createElement('style');
-            rippleStyle.textContent = `
-            @keyframes ripple {
-                to {
-                    transform: scale(4);
-                    opacity: 0;
-                }
-            }
-        `;
-            document.head.appendChild(rippleStyle);
-
-            // Enhanced table interactions
-            document.querySelectorAll('.table tbody tr').forEach(row => {
-                row.style.cursor = 'pointer';
-                row.addEventListener('click', function () {
-                    // Add click feedback
-                    this.style.backgroundColor = 'var(--light-cream)';
-                    setTimeout(() => {
-                        this.style.backgroundColor = '';
-                    }, 200);
-                });
-            });
-
-            // Search functionality (if needed in future)
-            function initSearch() {
-                const searchInput = document.getElementById('searchInput');
-                if (searchInput) {
-                    searchInput.addEventListener('input', function () {
-                        const filter = this.value.toLowerCase();
-                        const rows = document.querySelectorAll('.table tbody tr');
-
-                        rows.forEach(row => {
-                            const text = row.textContent.toLowerCase();
-                            row.style.display = text.includes(filter) ? '' : 'none';
-                        });
-                    });
-                }
-            }
-
-            // Initialize all interactive features
-            document.addEventListener('DOMContentLoaded', function () {
-                initSearch();
-
-                // Add loading animation to page
-                document.body.style.opacity = '0';
-                document.body.style.transition = 'opacity 0.3s ease';
-
-                setTimeout(() => {
-                    document.body.style.opacity = '1';
-                }, 100);
-            });
-        </script>
-
-        <!-- Bootstrap JS -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-        <!-- SweetAlert2 -->
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-        <!-- SweetAlert Confirmation Script -->
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const logoutLink = document.getElementById('logoutBtn');
-                if (logoutLink) {
-                    logoutLink.addEventListener('click', function (e) {
-                        e.preventDefault();
-
-                        Swal.fire({
-                            title: 'Apakah Anda ingin keluar?',
-                            text: "Anda akan meninggalkan sesi ini.",
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonColor: '#333446',
-                            cancelButtonColor: '#7F8CAA',
-                            confirmButtonText: 'Ya, Keluar',
-                            cancelButtonText: 'Batal'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                window.location.href = '../../logout.php';
-                            }
-                        });
-                    });
-                }
-
-                // Confirm Delete Function
-                window.confirmDelete = function (materialId) {
                     Swal.fire({
-                        title: 'Yakin hapus materi ini?',
-                        text: "Data akan dihapus permanen!",
+                        title: 'Apakah Anda ingin keluar?',
+                        text: "Anda akan meninggalkan sesi ini.",
                         icon: 'warning',
                         showCancelButton: true,
-                        confirmButtonColor: '#333446',
-                        cancelButtonColor: '#7F8CAA',
-                        confirmButtonText: 'Ya, Hapus!',
+                        confirmButtonColor: 'var(--primary)',
+                        cancelButtonColor: 'var(--gray-500)',
+                        confirmButtonText: 'Ya, Keluar',
                         cancelButtonText: 'Batal'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = `delete_materi.php?id=${materialId}`;
+                            window.location.href = logoutLink.href;
                         }
                     });
-                };
-            });
-        </script>
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

@@ -32,6 +32,12 @@ if (!$tugas) {
     exit();
 }
 
+// Create uploads directory if it doesn't exist
+$upload_dir = '../../uploads/tugas/';
+if (!file_exists($upload_dir)) {
+    mkdir($upload_dir, 0777, true);
+}
+
 // Get task types
 $jenis_tugas = $conn->query("SELECT * FROM jenis_tugas ORDER BY nama")->fetchAll();
 
@@ -53,6 +59,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $kelas_id = intval($_POST['kelas_id']);
     $jenis_tugas_id = intval($_POST['jenis_tugas_id']);
     $batas_pengumpulan = $_POST['batas_pengumpulan'];
+    $file_path = $tugas['file_path']; // Keep existing file path
+
+    // Handle file upload
+    if (isset($_FILES['file_tugas']) && $_FILES['file_tugas']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['file_tugas'];
+        $file_name = time() . '_' . basename($file['name']);
+        $file_path_destination = $upload_dir . $file_name;
+
+        // Check file type (allow common document types)
+        $allowed_types = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar'];
+        $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($file_extension, $allowed_types)) {
+            $errors[] = "Tipe file tidak diizinkan. File yang diizinkan: " . implode(', ', $allowed_types);
+        } else if ($file['size'] > 10 * 1024 * 1024) { // 10MB limit
+            $errors[] = "Ukuran file terlalu besar. Maksimal 10MB.";
+        } else if (move_uploaded_file($file['tmp_name'], $file_path_destination)) {
+            // Delete old file if exists
+            if ($tugas['file_path'] && file_exists('../../' . $tugas['file_path'])) {
+                unlink('../../' . $tugas['file_path']);
+            }
+            $file_path = 'uploads/tugas/' . $file_name;
+        } else {
+            $errors[] = "Gagal mengupload file";
+        }
+    }
 
     // Validate input
     $errors = [];
@@ -76,13 +108,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $stmt = $conn->prepare("
                 UPDATE tugas 
-                SET judul = ?, deskripsi = ?, kelas_id = ?, jenis_tugas_id = ?,
+                SET judul = ?, deskripsi = ?, file_path = ?, kelas_id = ?, jenis_tugas_id = ?,
                     batas_pengumpulan = ?
                 WHERE id = ? AND guru_id = ?
             ");
             $stmt->execute([
                 $judul,
                 $deskripsi,
+                $file_path,
                 $kelas_id,
                 $jenis_tugas_id,
                 $batas_pengumpulan,
@@ -237,6 +270,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-top: 0.5rem;
         }
 
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--info);
+            font-size: 0.9rem;
+        }
+
+        .file-info i {
+            color: var(--primary);
+        }
+
         .file-preview a {
             color: var(--primary);
             text-decoration: none;
@@ -310,7 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <h5 class="card-title mb-0">Form Edit Tugas</h5>
                     </div>
                     <div class="card-body">
-                        <form method="POST">
+                        <form method="POST" enctype="multipart/form-data">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="judul" class="form-label">Judul Tugas</label>
@@ -353,6 +398,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label for="deskripsi" class="form-label">Deskripsi Tugas</label>
                                 <textarea class="form-control" id="deskripsi" name="deskripsi" rows="4"
                                     required><?php echo htmlspecialchars($tugas['deskripsi']); ?></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="file_tugas" class="form-label">File Tugas</label>
+                                <input type="file" class="form-control" id="file_tugas" name="file_tugas"
+                                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar">
+                                <div class="form-text">
+                                    Tipe file yang diizinkan: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, ZIP, RAR.
+                                    Maksimal 10MB.
+                                </div>
+                                <?php if ($tugas['file_path']): ?>
+                                    <div class="file-preview mt-2">
+                                        <p class="mb-1"><strong>File saat ini:</strong></p>
+                                        <div class="file-info">
+                                            <i class="fas fa-file"></i>
+                                            <a href="../../<?php echo $tugas['file_path']; ?>" target="_blank"
+                                                class="text-decoration-none">
+                                                Lihat File
+                                            </a>
+                                        </div>
+                                        <small class="text-muted">Upload file baru untuk mengganti file yang ada</small>
+                                    </div>
+                                <?php endif; ?>
                             </div>
 
                             <div class="d-flex justify-content-end gap-2">

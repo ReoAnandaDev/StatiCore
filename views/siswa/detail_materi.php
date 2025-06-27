@@ -42,11 +42,8 @@ if (!$materi) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail Materi - StatiCore</title>
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Bootstrap 5.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -57,31 +54,17 @@ if (!$materi) {
             --white: #ffffff;
             --gray-100: #f8f9fa;
             --gray-200: #e9ecef;
-            --gray-300: #dee2e6;
-            --gray-400: #ced4da;
-            --gray-500: #adb5bd;
             --gray-600: #6c757d;
             --gray-700: #495057;
-            --gray-800: #343a40;
-            --gray-900: #212529;
             --border-radius-sm: 8px;
             --border-radius-md: 12px;
             --border-radius-lg: 16px;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #f8f9fa;
-            color: var(--primary);
-        }
-
-        .Title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 30px;
+            background-color: var(--gray-100);
             color: var(--primary);
         }
 
@@ -115,7 +98,7 @@ if (!$materi) {
             color: white;
         }
 
-        /* Content Card */
+        /* Main Content */
         .content-card {
             background: var(--white);
             border-radius: var(--border-radius-lg);
@@ -136,8 +119,20 @@ if (!$materi) {
             padding: 24px;
         }
 
+        .main-content {
+            padding: 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
         .material-meta {
             display: flex;
+            flex-wrap: wrap;
             gap: 24px;
             margin-bottom: 24px;
             padding-bottom: 16px;
@@ -157,7 +152,7 @@ if (!$materi) {
 
         .material-content {
             color: var(--gray-700);
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
         .material-content img {
@@ -167,57 +162,53 @@ if (!$materi) {
             margin: 16px 0;
         }
 
-        /* Buttons */
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            border: none;
             border-radius: var(--border-radius-sm);
             font-weight: 500;
-            text-decoration: none;
-            cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: var(--white);
+        /* CSS untuk Hamburger & Overlay */
+        .mobile-menu-toggle {
+            display: none;
         }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, var(--secondary), var(--primary));
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
 
-        .btn-secondary {
-            background: var(--gray-200);
-            color: var(--gray-700);
-        }
-
-        .btn-secondary:hover {
-            background: var(--gray-300);
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
         }
 
         /* Responsive Design */
-        @media (max-width: 768px) {
+        @media (max-width: 767.98px) {
             .sidebar {
                 position: fixed;
                 left: -280px;
                 top: 0;
-                bottom: 0;
+                height: 100%;
                 width: 280px;
                 z-index: 1000;
-                transition: all 0.3s ease-in-out;
+                transition: left 0.3s ease-in-out;
             }
 
             .sidebar.active {
                 left: 0;
             }
 
-            .content-wrapper {
+            .main-content {
+                width: 100%;
                 margin-left: 0 !important;
                 padding: 1rem;
             }
@@ -225,19 +216,47 @@ if (!$materi) {
             .material-meta {
                 flex-direction: column;
                 gap: 12px;
+                align-items: flex-start;
+            }
+
+            /* DIUBAH: Mengubah posisi tombol hamburger ke kiri atas */
+            .mobile-menu-toggle {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 1100;
+                background-color: var(--primary);
+                color: white;
+                border: none;
+                border-radius: 50%;
+                width: 44px;
+                height: 44px;
+                font-size: 1rem;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+
+            /* BARU: Memberi jarak agar judul tidak tertutup tombol */
+            .page-title {
+                margin-top: 3rem;
+                font-size: 1.5rem;
             }
         }
     </style>
 </head>
 
 <body>
+    <button class="mobile-menu-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar-overlay"></div>
+
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0 sidebar">
+            <div id="sidebar" class="col-md-3 col-lg-2 px-0 sidebar">
                 <div class="p-3">
-                    <h4><i class="fas fa-chart-line me-2"></i>StatiCore</h4>
-                    <hr>
+                    <h4 class="px-2 my-3"><i class="fas fa-chart-line me-2"></i>StatiCore</h4>
+                    <hr class="text-white">
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link" href="dashboard.php">
@@ -264,7 +283,7 @@ if (!$materi) {
                                 <i class="fas fa-star me-2"></i>Nilai
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item mt-auto">
                             <a class="nav-link" href="../../logout.php" id="logoutBtn">
                                 <i class="fas fa-sign-out-alt me-2"></i>Logout
                             </a>
@@ -273,13 +292,12 @@ if (!$materi) {
                 </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 p-4">
-                <div class="mb-4 Title">Detail Materi</div>
+            <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
+                <h1 class="page-title">Detail Materi</h1>
 
                 <div class="content-card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">
+                        <h5 class="card-title mb-0 fs-5">
                             <i class="fas fa-book-open me-2"></i>
                             <?php echo htmlspecialchars($materi['judul']); ?>
                         </h5>
@@ -288,26 +306,23 @@ if (!$materi) {
                         <div class="material-meta">
                             <div class="meta-item">
                                 <i class="fas fa-chalkboard-teacher"></i>
-                                <span>Kelas: <?php echo htmlspecialchars($materi['nama_kelas']); ?></span>
+                                <span>Kelas: <b><?php echo htmlspecialchars($materi['nama_kelas']); ?></b></span>
                             </div>
                             <div class="meta-item">
                                 <i class="fas fa-user-tie"></i>
-                                <span>Dosen: <?php echo htmlspecialchars($materi['guru_nama']); ?></span>
+                                <span>Dosen: <b><?php echo htmlspecialchars($materi['guru_nama']); ?></b></span>
                             </div>
                             <div class="meta-item">
-                                <i class="fas fa-calendar"></i>
-                                <span>Tanggal: <?php echo date('d M Y H:i', strtotime($materi['created_at'])); ?></span>
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Diupload:
+                                    <b><?php echo date('d M Y, H:i', strtotime($materi['created_at'])); ?></b></span>
                             </div>
                         </div>
 
                         <div class="material-content">
-                            <?php
-                            // Convert line breaks to <br> tags and escape HTML
-                            echo nl2br(htmlspecialchars($materi['deskripsi']));
+                            <?php echo nl2br(htmlspecialchars($materi['deskripsi'])); ?>
 
-                            // If there's a file attachment, show download link
-                            if (!empty($materi['file_path'])):
-                                ?>
+                            <?php if (!empty($materi['file_path'])): ?>
                                 <div class="mt-4">
                                     <a href="../../uploads/materi/<?php echo htmlspecialchars($materi['file_path']); ?>"
                                         class="btn btn-primary" target="_blank">
@@ -320,42 +335,62 @@ if (!$materi) {
                     </div>
                 </div>
 
-                <!-- Back Button -->
                 <div class="mt-4">
-                    <a href="dashboard.php" class="btn btn-secondary">
+                    <a href="materi.php" class="btn btn-secondary">
                         <i class="fas fa-arrow-left me-2"></i>
-                        Kembali ke Dashboard
+                        Kembali ke Daftar Materi
                     </a>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        // Logout confirmation
         document.addEventListener('DOMContentLoaded', function () {
+            // Logika untuk Hamburger Menu
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            const menuToggle = document.querySelector('.mobile-menu-toggle');
+
+            const toggleSidebar = () => {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('show');
+            };
+
+            if (menuToggle) {
+                menuToggle.addEventListener('click', toggleSidebar);
+            }
+            if (overlay) {
+                overlay.addEventListener('click', toggleSidebar);
+            }
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 767.98) {
+                    sidebar.classList.remove('active');
+                    overlay.classList.remove('show');
+                }
+            });
+
+            // Logika untuk konfirmasi logout
             const logoutLink = document.getElementById('logoutBtn');
             if (logoutLink) {
                 logoutLink.addEventListener('click', function (e) {
                     e.preventDefault();
-
                     Swal.fire({
                         title: 'Apakah Anda ingin keluar?',
                         text: "Anda akan meninggalkan sesi ini.",
                         icon: 'warning',
                         showCancelButton: true,
-                        confirmButtonColor: '#2c5282',
-                        cancelButtonColor: '#6c757d',
+                        confirmButtonColor: 'var(--primary)',
+                        cancelButtonColor: 'var(--gray-600)',
                         confirmButtonText: 'Ya, Keluar',
                         cancelButtonText: 'Batal'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = '../../logout.php';
+                            window.location.href = logoutLink.href;
                         }
                     });
                 });

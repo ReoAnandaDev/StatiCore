@@ -1,14 +1,14 @@
 <?php
+// Set zona waktu Indonesia
+date_default_timezone_set('Asia/Jakarta');
+
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 
 $db = new Database();
 $auth = new Auth($db->getConnection());
-
-// Check if user is logged in and is student
 $auth->checkSession();
 $auth->requireRole('siswa');
-
 $conn = $db->getConnection();
 
 // Get quiz ID from URL
@@ -157,65 +157,48 @@ $student_answer = $answers[$current_question['id']] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mengerjakan Quiz - StatiCore</title>
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Bootstrap 5.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --primary: #2c5282;
             --secondary: #4299e1;
-            --accent: #f6ad55;
             --light: #f7fafc;
             --white: #FFFFFF;
             --gray-50: #F9FAFB;
             --gray-100: #F3F4F6;
             --gray-200: #E5E7EB;
-            --gray-300: #D1D5DB;
-            --gray-500: #6B7280;
-            --gray-600: #4B5563;
             --gray-700: #374151;
             --gray-800: #1F2937;
             --success: #10B981;
             --warning: #F59E0B;
-            --info: #3B82F6;
             --danger: #EF4444;
             --border-radius-sm: 8px;
             --border-radius-md: 12px;
             --border-radius-lg: 16px;
         }
-
         body {
             font-family: 'Poppins', sans-serif;
             background-color: var(--gray-50);
             color: var(--gray-800);
+        }
+        .main-container {
+            display: flex;
             min-height: 100vh;
         }
-
-        .Title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 24px;
-            color: var(--primary);
-        }
-
-        /* Sidebar */
         .sidebar {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
+            width: 280px;
             min-height: 100vh;
             transition: all 0.3s ease;
             position: fixed;
-            width: inherit;
-            max-width: inherit;
+            z-index: 1000;
         }
-
         .sidebar .nav-link {
             color: rgba(255, 255, 255, 0.8);
             border-radius: var(--border-radius-sm);
@@ -225,29 +208,16 @@ $student_answer = $answers[$current_question['id']] ?? '';
             align-items: center;
             gap: 0.75rem;
         }
-
         .sidebar .nav-link:hover,
         .sidebar .nav-link.active {
             color: white;
             background-color: rgba(255, 255, 255, 0.1);
-            transform: translateX(4px);
         }
-
-        .sidebar h4 {
-            font-weight: 600;
-            padding-left: 1rem;
-            color: white;
-        }
-
-        /* Main Content */
         .main-content {
-            margin-left: 16.666667%;
+            flex-grow: 1;
             padding: 2rem;
-            min-height: 100vh;
-            position: relative;
+            margin-left: 280px; /* Lebar sidebar */
         }
-
-        /* Quiz Timer */
         .quiz-timer {
             position: fixed;
             top: 24px;
@@ -256,93 +226,17 @@ $student_answer = $answers[$current_question['id']] ?? '';
             padding: 12px 20px;
             border-radius: var(--border-radius-md);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 1001;
+            z-index: 990;
             border: 2px solid var(--primary);
             font-weight: 600;
-            font-size: 16px;
             color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
-
-        .quiz-timer.warning {
-            background: #fff3cd;
-            border-color: var(--warning);
-            animation: pulse 1s infinite;
-        }
-
-        .quiz-timer.danger {
-            background: #f8d7da;
-            border-color: var(--danger);
-            animation: pulse 0.5s infinite;
-        }
-
-        /* Quiz Info Card */
-        .quiz-info-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border: none;
-            margin-bottom: 24px;
-        }
-
-        .quiz-info-card .card-header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            border-bottom: none;
-            padding: 20px;
-            border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-        }
-
-        .quiz-info-card .card-body {
-            padding: 24px;
-        }
-
-        .quiz-info-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 16px;
-        }
-
-        .quiz-info-list li {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: var(--gray-50);
-            border-radius: var(--border-radius-sm);
-        }
-
-        .quiz-info-list i {
-            color: var(--primary);
-            font-size: 1.2rem;
-            width: 24px;
-            text-align: center;
-        }
-
-        /* Question Card */
         .question-card {
             background: white;
             border-radius: var(--border-radius-lg);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border: none;
-            margin-bottom: 24px;
-            transition: all 0.3s ease;
+            margin-top: 1.5rem;
         }
-
-        .question-card:hover {
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .question-card .card-body {
-            padding: 32px;
-        }
-
         .question-number {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
@@ -352,428 +246,217 @@ $student_answer = $answers[$current_question['id']] ?? '';
             display: inline-block;
             margin-bottom: 24px;
         }
-
-        .question-text {
-            font-size: 1.1rem;
-            color: var(--gray-800);
-            margin-bottom: 24px;
-            line-height: 1.6;
-        }
-
-        /* Answer Options */
-        .answer-options {
-            display: grid;
-            gap: 16px;
-        }
-
         .form-check {
-            margin: 0;
-            padding: 16px;
+            padding: 1rem;
             border: 2px solid var(--gray-200);
-            border-radius: var(--border-radius-sm);
-            transition: all 0.3s ease;
+            border-radius: var(--border-radius-md);
+            transition: all 0.2s ease-in-out;
             cursor: pointer;
-            position: relative;
-            display: flex;
-            align-items: center;
         }
-
         .form-check:hover {
             border-color: var(--secondary);
-            background: var(--gray-50);
-            transform: translateY(-1px);
+            background-color: var(--light);
         }
-
-        .form-check-input {
-            width: 1.2em;
-            height: 1.2em;
-            margin: 0;
-            position: absolute;
-            opacity: 0;
-            cursor: pointer;
-        }
-
         .form-check-input:checked + .form-check-label {
             color: var(--primary);
-            font-weight: 500;
-        }
-
-        .form-check-input:checked ~ .form-check {
-            border-color: var(--primary);
-            background: var(--gray-50);
-        }
-
-        .form-check-label {
-            font-size: 1rem;
-            color: var(--gray-700);
-            margin: 0;
-            padding-left: 2.5rem;
-            cursor: pointer;
-            width: 100%;
-            position: relative;
-        }
-
-        .form-check-label::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 1.2em;
-            height: 1.2em;
-            border: 2px solid var(--gray-300);
-            border-radius: 50%;
-            background-color: white;
-            transition: all 0.2s ease;
-        }
-
-        .form-check-input:checked + .form-check-label::before {
-            border-color: var(--primary);
-            background-color: var(--primary);
-            box-shadow: inset 0 0 0 4px white;
-        }
-
-        .form-check:hover .form-check-label::before {
-            border-color: var(--secondary);
-        }
-
-        /* Navigation Buttons */
-        .nav-buttons {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            margin-top: 32px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border-radius: var(--border-radius-sm);
             font-weight: 600;
-            transition: all 0.3s ease;
-            border: none;
-            min-width: 160px;
         }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
+        .form-check-input:checked + .form-check-label::before {
+            background-color: var(--primary);
+            border-color: var(--primary);
         }
-
-        .btn-primary:hover {
-            background: linear-gradient(135deg, var(--secondary), var(--primary));
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-secondary {
-            background: var(--gray-600);
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: var(--gray-700);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success), #059669);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: linear-gradient(135deg, #059669, var(--success));
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Result Alert */
+        
         .result-alert {
-            background: linear-gradient(135deg, var(--success), #059669);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius-lg);
-            padding: 32px;
-            margin-top: 32px;
-            text-align: center;
+             text-align: center;
         }
-
-        .result-alert h4 {
-            font-size: 1.5rem;
-            margin-bottom: 16px;
+        
+        /* BARU: CSS untuk Hamburger & Overlay */
+        .mobile-menu-toggle { display: none; }
+        .sidebar-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0; visibility: hidden;
+            transition: all 0.3s ease;
         }
-
-        .result-alert .score {
-            font-size: 3rem;
-            font-weight: 700;
-            margin: 24px 0;
-        }
-
-        .result-alert .stats {
-            display: flex;
-            justify-content: center;
-            gap: 24px;
-            margin: 24px 0;
-        }
-
-        .result-alert .stat-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 16px 32px;
-            border-radius: var(--border-radius-sm);
-            font-size: 1.1rem;
-        }
-
-        /* Responsive Styles */
-        @media (max-width: 992px) {
-            .sidebar {
-                position: static;
-                width: 100%;
-                max-width: 100%;
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 1rem;
-            }
-
-            .quiz-timer {
-                position: static;
-                margin-bottom: 24px;
-                width: 100%;
-                justify-content: center;
-            }
-
-            .quiz-info-list {
-                grid-template-columns: 1fr;
-            }
-
-            .nav-buttons {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .Title {
-                font-size: 1.25rem;
-            }
-
-            .question-card .card-body {
-                padding: 24px;
-            }
-
-            .question-text {
+        .sidebar-overlay.show { opacity: 1; visibility: visible; }
+        
+        @media (max-width: 991.98px) {
+            .main-content { margin-left: 0; }
+            .sidebar { left: -280px; }
+            .sidebar.active { left: 0; }
+            .mobile-menu-toggle {
+                display: block;
+                position: fixed;
+                top: 1rem; left: 1rem;
+                z-index: 1100;
+                background-color: var(--primary);
+                color: white;
+                border: none;
+                border-radius: 50%;
+                width: 44px; height: 44px;
                 font-size: 1rem;
             }
-
-            .result-alert {
-                padding: 24px;
-            }
-
-            .result-alert .stats {
-                flex-direction: column;
-                gap: 16px;
-            }
-
-            .result-alert .stat-item {
-                padding: 12px 24px;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .quiz-info-card .card-body {
-                padding: 16px;
-            }
-
-            .question-number {
-                font-size: 0.9rem;
-                padding: 6px 12px;
-            }
-
-            .form-check {
-                padding: 12px;
-            }
-
-            .form-check-label {
-                font-size: 0.9rem;
-            }
-
-            .result-alert .score {
-                font-size: 2.5rem;
+            .page-title { margin-top: 3.5rem; }
+            .quiz-timer {
+                position: static;
+                width: 100%;
+                margin-bottom: 1rem;
+                justify-content: center;
+                display: flex;
             }
         }
     </style>
 </head>
-
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0 sidebar">
-                <div class="p-3">
-                    <h4><i class="fas fa-chart-line me-2"></i>StatiCore</h4>
-                    <hr>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link" href="dashboard.php">
-                                <i class="fas fa-home me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <!-- <li class="nav-item">
-                            <a class="nav-link" href="detail_kelas.php">
-                                <i class="fas fa-chalkboard me-2"></i>Kelas
-                            </a>
-                        </li> -->
-                        <li class="nav-item">
-                            <a class="nav-link" href="materi.php">
-                                <i class="fas fa-book me-2"></i>Materi
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="quiz.php">
-                                <i class="fas fa-question-circle me-2"></i>Quiz
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="tugas.php">
-                                <i class="fas fa-tasks me-2"></i>Tugas
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="nilai.php">
-                                <i class="fas fa-star me-2"></i>Nilai
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="../../logout.php" id="logoutBtn">
-                                <i class="fas fa-sign-out-alt me-2"></i>Logout
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 main-content">
-                <!-- Quiz Timer -->
-                <div class="quiz-timer">
-                    <i class="fas fa-clock"></i>
-                    <span id="timer">Loading...</span>
-                </div>
-
-                <div class="Title"><?php echo $quiz['judul']; ?></div>
-
-                <?php if (isset($error_message)): ?>
-                    <div class="alert alert-danger"><?php echo $error_message; ?></div>
-                <?php endif; ?>
-
-                <!-- Quiz Info Card -->
-                <div class="quiz-info-card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informasi Quiz</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="card-text mb-4"><?php echo $quiz['deskripsi']; ?></p>
-                        <ul class="quiz-info-list">
-                            <li>
-                                <i class="fas fa-chalkboard"></i>
-                                <span>Kelas: <?php echo $quiz['nama_kelas']; ?> (<?php echo $quiz['tahun_ajaran']; ?>)</span>
-                            </li>
-                            <li>
-                                <i class="fas fa-user"></i>
-                                <span>Dosen: <?php echo $quiz['guru_nama']; ?></span>
-                            </li>
-                            <li>
-                                <i class="fas fa-clock"></i>
-                                <span>Durasi: <?php echo $quiz['durasi']; ?> menit</span>
-                            </li>
-                            <li>
-                                <i class="fas fa-question-circle"></i>
-                                <span>Jumlah Soal: <?php echo $total_questions; ?></span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <?php if (!isset($show_result)): ?>
-                    <form method="POST" id="quizForm">
-                        <div class="question-card">
-                            <div class="card-body">
-                                <div class="question-number">
-                                    Pertanyaan <?php echo $q_index + 1; ?> dari <?php echo $total_questions; ?>
-                                </div>
-                                <p class="question-text"><?php echo $current_question['pertanyaan']; ?></p>
-
-                                <?php if ($current_question['tipe'] === 'pilihan_ganda'): ?>
-                                    <div class="answer-options">
-                                        <?php foreach ($options_map[$current_question['id']] as $option): ?>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio"
-                                                    name="answer" value="<?php echo $option['pilihan']; ?>" 
-                                                    id="answer_<?php echo $option['id']; ?>"
-                                                    <?php echo $student_answer === $option['pilihan'] ? 'checked' : ''; ?> required>
-                                                <label class="form-check-label" for="answer_<?php echo $option['id']; ?>">
-                                                    <?php echo $option['pilihan']; ?>
-                                                </label>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php else: ?>
-                                    <textarea class="form-control" name="answer" rows="3" required><?php echo htmlspecialchars($student_answer); ?></textarea>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-
-                        <div class="nav-buttons">
-                            <?php if ($q_index > 0): ?>
-                                <button type="submit" name="prev" class="btn btn-secondary">
-                                    <i class="fas fa-arrow-left me-2"></i>Sebelumnya
-                                </button>
-                            <?php else: ?>
-                                <a href="quiz.php" class="btn btn-secondary">
-                                    <i class="fas fa-arrow-left me-2"></i>Kembali
-                                </a>
-                            <?php endif; ?>
-                            <?php if ($q_index < $total_questions - 1): ?>
-                                <button type="submit" name="next" class="btn btn-primary">
-                                    Selanjutnya <i class="fas fa-arrow-right ms-2"></i>
-                                </button>
-                            <?php else: ?>
-                                <button type="submit" name="submit_quiz" class="btn btn-success">
-                                    <i class="fas fa-save me-2"></i>Simpan Jawaban
-                                </button>
-                            <?php endif; ?>
-                        </div>
-                    </form>
-                <?php endif; ?>
-
-                <?php if (isset($show_result) && $show_result): ?>
-                    <div class="result-alert">
-                        <h4><i class="fas fa-check-circle me-2"></i>Quiz Selesai!</h4>
-                        <div class="score"><?php echo number_format($final_score, 1); ?></div>
-                        <div class="stats">
-                            <div class="stat-item">
-                                <i class="fas fa-check me-2"></i>
-                                Jawaban Benar: <?php echo $jawaban_benar; ?>
-                            </div>
-                            <div class="stat-item">
-                                <i class="fas fa-list me-2"></i>
-                                Total Soal: <?php echo $total_soal; ?>
-                            </div>
-                        </div>
-                        <a href="quiz.php" class="btn btn-light mt-3">
-                            <i class="fas fa-arrow-left me-2"></i>Kembali ke Daftar Quiz
-                        </a>
-                    </div>
-                <?php endif; ?>
+    <button class="mobile-menu-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar-overlay"></div>
+    
+    <div class="main-container">
+        <div id="sidebar" class="sidebar"> <div class="p-3">
+                <h4 class="px-2 my-3"><i class="fas fa-chart-line me-2"></i>StatiCore</h4>
+                <hr class="text-white">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.php"><i class="fas fa-home me-2"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="materi.php"><i class="fas fa-book me-2"></i>Materi</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="quiz.php"><i class="fas fa-question-circle me-2"></i>Quiz</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="tugas.php"><i class="fas fa-tasks me-2"></i>Tugas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="nilai.php"><i class="fas fa-star me-2"></i>Nilai</a>
+                    </li>
+                    <li class="nav-item mt-auto">
+                        <a class="nav-link" href="../../logout.php" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+                    </li>
+                </ul>
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <div class="main-content">
+            <div class="quiz-timer">
+                <i class="fas fa-clock me-2"></i>
+                <span id="timer">Memuat...</span>
+            </div>
+            
+            <h1 class="page-title mb-4"><?php echo htmlspecialchars($quiz['judul']); ?></h1>
+
+            <?php if (isset($error_message)): ?>
+                <div class="alert alert-danger"><?php echo $error_message; ?></div>
+            <?php endif; ?>
+
+            <?php if (!isset($show_result)): ?>
+                <form method="POST" id="quizForm">
+                    <div class="question-card card">
+                        <div class="card-body">
+                            <div class="question-number">
+                                Pertanyaan <?php echo $q_index + 1; ?> dari <?php echo $total_questions; ?>
+                            </div>
+                            <p class="fs-5 mb-4"><?php echo htmlspecialchars($current_question['pertanyaan']); ?></p>
+
+                            <div class="answer-options">
+                                <?php foreach ($options_map[$current_question['id']] as $option): ?>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio"
+                                            name="answer" value="<?php echo htmlspecialchars($option['pilihan']); ?>" 
+                                            id="answer_<?php echo $option['id']; ?>"
+                                            <?php echo $student_answer === $option['pilihan'] ? 'checked' : ''; ?> required>
+                                        <label class="form-check-label w-100" for="answer_<?php echo $option['id']; ?>">
+                                            <?php echo htmlspecialchars($option['pilihan']); ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <?php if ($q_index > 0): ?>
+                            <button type="submit" name="prev" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Sebelumnya</button>
+                        <?php else: ?>
+                            <span></span>
+                        <?php endif; ?>
+
+                        <?php if ($q_index < $total_questions - 1): ?>
+                            <button type="submit" name="next" class="btn btn-primary">Selanjutnya<i class="fas fa-arrow-right ms-2"></i></button>
+                        <?php else: ?>
+                            <button type="submit" name="submit_quiz" class="btn btn-success"><i class="fas fa-check-circle me-2"></i>Selesaikan Quiz</button>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            <?php endif; ?>
+
+            <?php if (isset($show_result) && $show_result): ?>
+                <div class="result-alert alert alert-success">
+                    <h4 class="alert-heading"><i class="fas fa-trophy me-2"></i>Quiz Selesai!</h4>
+                    <p>Skor Akhir Anda:</p>
+                    <h1 class="display-1 fw-bold"><?php echo number_format($final_score, 1); ?></h1>
+                    <hr>
+                    <p class="mb-0">
+                        Anda menjawab <b><?php echo $jawaban_benar; ?></b> dari <b><?php echo $total_soal; ?></b> soal dengan benar.
+                    </p>
+                    <a href="quiz.php" class="btn btn-light mt-4"><i class="fas fa-arrow-left me-2"></i>Kembali ke Daftar Quiz</a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Logika untuk Hamburger Menu
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+        const menuToggle = document.querySelector('.mobile-menu-toggle');
+
+        if(sidebar && overlay && menuToggle) {
+            const toggleSidebar = () => {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('show');
+            };
+            menuToggle.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+        }
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 991.98 && sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('show');
+            }
+        });
+
+        // Logika untuk konfirmasi logout
+        const logoutLink = document.getElementById('logoutBtn');
+        if (logoutLink) {
+            logoutLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Apakah Anda ingin keluar?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: 'var(--primary)',
+                    cancelButtonColor: 'var(--gray-600)',
+                    confirmButtonText: 'Ya, Keluar',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = logoutLink.href;
+                    }
+                });
+            });
+        }
+    });
+    </script>
+    
     <script>
         // Quiz Timer
         function updateTimer() {
@@ -783,7 +466,17 @@ $student_answer = $answers[$current_question['id']] ?? '';
 
             if (distance < 0) {
                 document.getElementById('timer').innerHTML = 'Waktu Habis';
-                document.getElementById('quizForm').submit();
+                // Otomatis submit form jika waktu habis
+                const quizForm = document.getElementById('quizForm');
+                if(quizForm) {
+                    // tambahkan input hidden untuk menandai bahwa ini adalah submit otomatis
+                    let autoSubmitInput = document.createElement('input');
+                    autoSubmitInput.type = 'hidden';
+                    autoSubmitInput.name = 'submit_quiz';
+                    autoSubmitInput.value = '1';
+                    quizForm.appendChild(autoSubmitInput);
+                    quizForm.submit();
+                }
                 return;
             }
 
@@ -793,22 +486,20 @@ $student_answer = $answers[$current_question['id']] ?? '';
 
             const timerElement = document.getElementById('timer');
             timerElement.innerHTML = hours.toString().padStart(2, '0') + ':' +
-                                   minutes.toString().padStart(2, '0') + ':' +
-                                   seconds.toString().padStart(2, '0');
+                                     minutes.toString().padStart(2, '0') + ':' +
+                                     seconds.toString().padStart(2, '0');
 
-            // Add warning class when less than 5 minutes remaining
-            if (minutes < 5) {
-                timerElement.parentElement.classList.add('warning');
-            }
-            // Add danger class when less than 1 minute remaining
+            const timerContainer = timerElement.closest('.quiz-timer');
+            timerContainer.classList.remove('warning', 'danger');
             if (minutes < 1) {
-                timerElement.parentElement.classList.add('danger');
+                timerContainer.classList.add('danger');
+            } else if (minutes < 5) {
+                timerContainer.classList.add('warning');
             }
         }
 
-        setInterval(updateTimer, 1000);
-        updateTimer();
+        const timerInterval = setInterval(updateTimer, 1000);
+        updateTimer(); // Panggil sekali saat load
     </script>
 </body>
-
 </html>

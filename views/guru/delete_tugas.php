@@ -24,12 +24,12 @@ if (!$tugas_id) {
 try {
     $conn->beginTransaction();
 
-    // Verify if the assignment belongs to the logged-in teacher
-    $stmt = $conn->prepare("SELECT id FROM tugas WHERE id = ? AND guru_id = ?");
+    // Get task details including file path
+    $stmt = $conn->prepare("SELECT file_path FROM tugas WHERE id = ? AND guru_id = ?");
     $stmt->execute([$tugas_id, $_SESSION['user_id']]);
-    $tugas_exists = $stmt->fetchColumn();
+    $tugas = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$tugas_exists) {
+    if (!$tugas) {
         throw new Exception("Tugas tidak ditemukan atau Anda tidak berhak menghapusnya.");
     }
 
@@ -40,6 +40,11 @@ try {
     // Delete the assignment
     $stmt = $conn->prepare("DELETE FROM tugas WHERE id = ?");
     $stmt->execute([$tugas_id]);
+
+    // Delete physical file if exists
+    if ($tugas['file_path'] && file_exists('../../' . $tugas['file_path'])) {
+        unlink('../../' . $tugas['file_path']);
+    }
 
     $conn->commit();
     $message = "Tugas berhasil dihapus.";

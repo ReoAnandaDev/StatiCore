@@ -12,6 +12,18 @@ $auth->requireRole('guru');
 $conn = $db->getConnection();
 $message = '';
 
+// Check for messages from URL parameters (for delete operations)
+if (isset($_GET['message'])) {
+    $message = $_GET['message'];
+    $message_type = isset($_GET['type']) ? $_GET['type'] : 'info';
+}
+
+// Create uploads directory if it doesn't exist
+$upload_dir = '../../uploads/tugas/';
+if (!file_exists($upload_dir)) {
+    mkdir($upload_dir, 0777, true);
+}
+
 // Get teacher's classes
 $stmt = $conn->prepare("
     SELECT k.* FROM kelas k
@@ -36,16 +48,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $jenis_tugas_id = filter_input(INPUT_POST, 'jenis_tugas_id', FILTER_SANITIZE_NUMBER_INT);
                 $kelas_id = filter_input(INPUT_POST, 'kelas_id', FILTER_SANITIZE_NUMBER_INT);
                 $batas_pengumpulan = filter_input(INPUT_POST, 'batas_pengumpulan', FILTER_SANITIZE_STRING);
+                $file_path = null;
 
-                try {
-                    $stmt = $conn->prepare("
-                        INSERT INTO tugas (judul, deskripsi, jenis_tugas_id, kelas_id, guru_id, batas_pengumpulan)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    ");
-                    $stmt->execute([$judul, $deskripsi, $jenis_tugas_id, $kelas_id, $_SESSION['user_id'], $batas_pengumpulan]);
-                    $message = "Tugas berhasil dibuat";
-                } catch (PDOException $e) {
-                    $message = "Error: " . $e->getMessage();
+                // Handle file upload
+                if (isset($_FILES['file_tugas']) && $_FILES['file_tugas']['error'] === UPLOAD_ERR_OK) {
+                    $file = $_FILES['file_tugas'];
+                    $file_name = time() . '_' . basename($file['name']);
+                    $file_path_destination = $upload_dir . $file_name;
+
+                    // Check file type (allow common document types)
+                    $allowed_types = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar'];
+                    $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+                    if (!in_array($file_extension, $allowed_types)) {
+                        $message = "Error: Tipe file tidak diizinkan. File yang diizinkan: " . implode(', ', $allowed_types);
+                    } else if ($file['size'] > 10 * 1024 * 1024) { // 10MB limit
+                        $message = "Error: Ukuran file terlalu besar. Maksimal 10MB.";
+                    } else if (move_uploaded_file($file['tmp_name'], $file_path_destination)) {
+                        $file_path = 'uploads/tugas/' . $file_name;
+                    } else {
+                        $message = "Error: Gagal mengupload file";
+                    }
+                }
+
+                if (empty($message)) {
+                    try {
+                        $stmt = $conn->prepare("
+                            INSERT INTO tugas (judul, deskripsi, file_path, jenis_tugas_id, kelas_id, guru_id, batas_pengumpulan)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ");
+                        $stmt->execute([$judul, $deskripsi, $file_path, $jenis_tugas_id, $kelas_id, $_SESSION['user_id'], $batas_pengumpulan]);
+                        $message = "Tugas berhasil dibuat";
+                    } catch (PDOException $e) {
+                        $message = "Error: " . $e->getMessage();
+                        // Delete uploaded file if database insert fails
+                        if ($file_path && file_exists('../../' . $file_path)) {
+                            unlink('../../' . $file_path);
+                        }
+                    }
                 }
                 break;
         }
@@ -212,14 +252,100 @@ $tugas = $stmt->fetchAll();
         .badge-danger {
             background-color: var(--danger);
         }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--info);
+            font-size: 0.9rem;
+        }
+
+        .file-info i {
+            color: var(--primary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 260px;
+                z-index: 1050;
+                background: linear-gradient(135deg, var(--primary), var(--secondary));
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(.4, 0, .2, 1);
+                box-shadow: 2px 0 16px rgba(44, 82, 130, 0.08);
+                display: block;
+            }
+
+            .sidebar.drawer-open {
+                transform: translateX(0);
+            }
+
+            .sidebar .p-3 {
+                padding-top: 2.5rem !important;
+            }
+
+            .sidebar-backdrop {
+                display: block;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.25);
+                z-index: 1049;
+                opacity: 1;
+                transition: opacity 0.3s;
+            }
+
+            .content-wrapper,
+            .p-4 {
+                margin-left: 0 !important;
+                padding: 16px !important;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 1100;
+                background: var(--primary);
+                color: #fff;
+                border: none;
+                border-radius: 50%;
+                width: 44px;
+                height: 44px;
+                font-size: 1.5rem;
+                box-shadow: 0 2px 8px rgba(44, 82, 130, 0.08);
+            }
+        }
+
+        @media (max-width: 576px) {
+
+            .card,
+            .card-body,
+            .card-header {
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+            }
+        }
     </style>
 </head>
 
 <body>
+    <button class="mobile-menu-toggle d-lg-none" id="drawerToggle" aria-label="Buka menu">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div id="sidebarBackdrop" class="sidebar-backdrop" style="display:none;"></div>
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0 sidebar">
+            <div class="col-md-3 col-lg-2 px-0 sidebar" id="drawerSidebar">
                 <div class="p-3">
                     <h4><i class="fas fa-chart-line me-2"></i>StatiCore</h4>
                     <hr>
@@ -268,7 +394,8 @@ $tugas = $stmt->fetchAll();
                 <h2 class="Title">Kelola Tugas</h2>
 
                 <?php if ($message): ?>
-                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <div class="alert alert-<?php echo isset($message_type) ? $message_type : 'info'; ?> alert-dismissible fade show"
+                        role="alert">
                         <?php echo $message; ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
@@ -293,6 +420,7 @@ $tugas = $stmt->fetchAll();
                                         <th>Judul</th>
                                         <th>Jenis</th>
                                         <th>Kelas</th>
+                                        <th>File</th>
                                         <th>Batas Pengumpulan</th>
                                         <th>Total Pengumpulan</th>
                                         <th>Aksi</th>
@@ -304,6 +432,19 @@ $tugas = $stmt->fetchAll();
                                             <td><?php echo htmlspecialchars($t['judul']); ?></td>
                                             <td><?php echo htmlspecialchars($t['jenis_tugas']); ?></td>
                                             <td><?php echo htmlspecialchars($t['nama_kelas'] . ' (' . $t['tahun_ajaran'] . ')'); ?>
+                                            </td>
+                                            <td>
+                                                <?php if ($t['file_path']): ?>
+                                                    <div class="file-info">
+                                                        <i class="fas fa-file"></i>
+                                                        <a href="../../<?php echo $t['file_path']; ?>" target="_blank"
+                                                            class="text-decoration-none">
+                                                            Lihat File
+                                                        </a>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="text-muted">Tidak ada file</span>
+                                                <?php endif; ?>
                                             </td>
                                             <td><?php echo date('d M Y H:i', strtotime($t['batas_pengumpulan'])); ?></td>
                                             <td><?php echo $t['total_pengumpulan']; ?> siswa</td>
@@ -342,7 +483,7 @@ $tugas = $stmt->fetchAll();
                     <h5 class="modal-title" id="createTaskModalLabel">Buat Tugas Baru</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="" method="POST">
+                <form action="" method="POST" enctype="multipart/form-data">
                     <div class="modal-body">
                         <input type="hidden" name="action" value="create_tugas">
 
@@ -380,6 +521,16 @@ $tugas = $stmt->fetchAll();
                         </div>
 
                         <div class="mb-3">
+                            <label for="file_tugas" class="form-label">File Tugas (Opsional)</label>
+                            <input type="file" class="form-control" id="file_tugas" name="file_tugas"
+                                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar">
+                            <div class="form-text">
+                                Tipe file yang diizinkan: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, ZIP, RAR. Maksimal
+                                10MB.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
                             <label for="batas_pengumpulan" class="form-label">Batas Pengumpulan</label>
                             <input type="datetime-local" class="form-control" id="batas_pengumpulan"
                                 name="batas_pengumpulan" required>
@@ -395,6 +546,38 @@ $tugas = $stmt->fetchAll();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Drawer sidebar logic
+            const drawerToggle = document.getElementById('drawerToggle');
+            const sidebar = document.getElementById('drawerSidebar');
+            const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+            function openDrawer() {
+                sidebar.classList.add('drawer-open');
+                sidebarBackdrop.style.display = 'block';
+            }
+            function closeDrawer() {
+                sidebar.classList.remove('drawer-open');
+                sidebarBackdrop.style.display = 'none';
+            }
+            drawerToggle.addEventListener('click', function () {
+                openDrawer();
+            });
+            sidebarBackdrop.addEventListener('click', function () {
+                closeDrawer();
+            });
+            // Close drawer on menu click (mobile only)
+            sidebar.querySelectorAll('.nav-link').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    if (window.innerWidth < 992) closeDrawer();
+                });
+            });
+            // Close drawer on resize to desktop
+            window.addEventListener('resize', function () {
+                if (window.innerWidth >= 992) closeDrawer();
+            });
+        });
+    </script>
 </body>
 
 </html>

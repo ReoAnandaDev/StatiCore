@@ -242,6 +242,7 @@ CREATE TABLE `tugas` (
   `id` int(11) NOT NULL,
   `judul` varchar(255) NOT NULL,
   `deskripsi` text DEFAULT NULL,
+  `file_path` varchar(255) DEFAULT NULL,
   `jenis_tugas_id` int(11) NOT NULL,
   `kelas_id` int(11) NOT NULL,
   `guru_id` int(11) NOT NULL,

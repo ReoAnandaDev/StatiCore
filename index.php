@@ -7,7 +7,7 @@ $auth = new Auth($db->getConnection());
 
 // Redirect to dashboard if already logged in
 if ($auth->isLoggedIn()) {
-    header("Location: /SMPedia/views/" . $_SESSION['role'] . "/dashboard.php");
+    header("Location: /Staticore/views/" . $_SESSION['role'] . "/dashboard.php");
     exit();
 }
 ?>

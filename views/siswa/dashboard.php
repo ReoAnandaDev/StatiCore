@@ -10,9 +10,10 @@ $auth->checkSession();
 $auth->requireRole('siswa');
 
 $conn = $db->getConnection();
+$user_id = $_SESSION['user_id'];
 
 // Get student's classes
-$stmt = $conn->prepare("
+$stmt_kelas = $conn->prepare("
     SELECT k.*, 
            (SELECT COUNT(*) FROM materi m WHERE m.kelas_id = k.id) as total_materi,
            (SELECT COUNT(*) FROM quiz q WHERE q.kelas_id = k.id) as total_quiz
@@ -21,11 +22,11 @@ $stmt = $conn->prepare("
     WHERE sk.siswa_id = ?
     ORDER BY k.tahun_ajaran DESC, k.nama_kelas
 ");
-$stmt->execute([$_SESSION['user_id']]);
-$classes = $stmt->fetchAll();
+$stmt_kelas->execute([$user_id]);
+$classes = $stmt_kelas->fetchAll(PDO::FETCH_ASSOC);
 
 // Get recent materials
-$stmt = $conn->prepare("
+$stmt_materi = $conn->prepare("
     SELECT m.*, k.nama_kelas, u.nama_lengkap as guru_nama
     FROM materi m
     JOIN kelas k ON m.kelas_id = k.id
@@ -35,11 +36,11 @@ $stmt = $conn->prepare("
     ORDER BY m.created_at DESC
     LIMIT 5
 ");
-$stmt->execute([$_SESSION['user_id']]);
-$recent_materials = $stmt->fetchAll();
+$stmt_materi->execute([$user_id]);
+$recent_materials = $stmt_materi->fetchAll(PDO::FETCH_ASSOC);
 
 // Get upcoming quizzes
-$stmt = $conn->prepare("
+$stmt_quiz = $conn->prepare("
     SELECT q.*, k.nama_kelas, u.nama_lengkap as guru_nama,
            (SELECT COUNT(*) FROM soal_quiz sq WHERE sq.quiz_id = q.id) as total_soal,
            (SELECT COUNT(*) FROM jawaban_siswa js 
@@ -53,38 +54,11 @@ $stmt = $conn->prepare("
     ORDER BY q.waktu_mulai ASC
     LIMIT 5
 ");
-$stmt->execute([$_SESSION['user_id'], $_SESSION['user_id']]);
-$upcoming_quizzes = $stmt->fetchAll();
-
-// Get quiz results
-$stmt = $conn->prepare("
-    SELECT q.*, k.nama_kelas, u.nama_lengkap as guru_nama,
-           (SELECT AVG(nilai) FROM jawaban_siswa js 
-            JOIN soal_quiz sq ON js.soal_id = sq.id 
-            WHERE sq.quiz_id = q.id AND js.siswa_id = ?) as nilai_rata_rata
-    FROM quiz q
-    JOIN kelas k ON q.kelas_id = k.id
-    JOIN users u ON q.guru_id = u.id
-    JOIN siswa_kelas sk ON k.id = sk.kelas_id
-    WHERE sk.siswa_id = ? AND q.waktu_selesai < NOW()
-    ORDER BY q.waktu_selesai DESC
-    LIMIT 5
-");
-$stmt->execute([$_SESSION['user_id'], $_SESSION['user_id']]);
-$quiz_results = $stmt->fetchAll();
-
-// Get total tasks for the student
-$stmt = $conn->prepare("
-    SELECT COUNT(t.id) as total_tugas
-    FROM tugas t
-    JOIN siswa_kelas sk ON t.kelas_id = sk.kelas_id
-    WHERE sk.siswa_id = ?
-");
-$stmt->execute([$_SESSION['user_id']]);
-$total_tugas = $stmt->fetchColumn();
+$stmt_quiz->execute([$user_id, $user_id]);
+$upcoming_quizzes = $stmt_quiz->fetchAll(PDO::FETCH_ASSOC);
 
 // Get upcoming tasks
-$stmt = $conn->prepare("
+$stmt_tugas = $conn->prepare("
     SELECT t.*, k.nama_kelas, jt.nama as jenis_tugas, u.nama_lengkap as nama_guru
     FROM tugas t
     JOIN kelas k ON t.kelas_id = k.id
@@ -95,8 +69,44 @@ $stmt = $conn->prepare("
     ORDER BY t.batas_pengumpulan ASC
     LIMIT 5
 ");
-$stmt->execute([$_SESSION['user_id']]);
-$upcoming_tasks = $stmt->fetchAll();
+$stmt_tugas->execute([$user_id]);
+$upcoming_tasks = $stmt_tugas->fetchAll(PDO::FETCH_ASSOC);
+
+// Get recent quiz results
+$stmt_hasil = $conn->prepare("
+    SELECT 
+        q.id,
+        q.judul,
+        k.nama_kelas,
+        (
+            SELECT ROUND((SUM(js.nilai) / COUNT(sq.id)), 1)
+            FROM jawaban_siswa js
+            JOIN soal_quiz sq ON js.soal_id = sq.id
+            WHERE sq.quiz_id = q.id AND js.siswa_id = ?
+        ) as nilai
+    FROM quiz q
+    JOIN kelas k ON q.kelas_id = k.id
+    JOIN siswa_kelas sk ON k.id = sk.kelas_id
+    WHERE sk.siswa_id = ? AND q.waktu_selesai < NOW()
+      AND EXISTS (
+          SELECT 1 FROM jawaban_siswa js 
+          JOIN soal_quiz sq ON js.soal_id = sq.id 
+          WHERE sq.quiz_id = q.id AND js.siswa_id = ?
+      )
+    ORDER BY q.waktu_selesai DESC
+    LIMIT 5
+");
+$stmt_hasil->execute([$user_id, $user_id, $user_id]);
+$quiz_results = $stmt_hasil->fetchAll(PDO::FETCH_ASSOC);
+
+// Calculate total materials and quizzes
+$total_materi_count = 0;
+$total_quiz_count = 0;
+foreach ($classes as $class) {
+    $total_materi_count += $class['total_materi'];
+    $total_quiz_count += $class['total_quiz'];
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -104,317 +114,251 @@ $upcoming_tasks = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Mahasiswa/i - StatiCore</title>
-    <!-- Fonts -->
+    <title>Dashboard Mahasiswa - StatiCore</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Bootstrap 5.3 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary: #2c5282;
-            --secondary: #4299e1;
-            --accent: #f6ad55;
-            --light: #f7fafc;
-            --white: #FFFFFF;
-            --gray-50: #F9FAFB;
-            --gray-100: #F3F4F6;
-            --gray-200: #E5E7EB;
-            --gray-300: #D1D5DB;
-            --gray-500: #6B7280;
-            --gray-600: #4B5563;
-            --gray-700: #374151;
-            --gray-800: #1F2937;
+            --primary-color: #2c5282;
+            --secondary-color: #4299e1;
+            --light-bg: #f8f9fa;
+            --white: #ffffff;
+            --gray-text: #6c757d;
+            --border-color: #e5e7eb;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --border-radius: 0.75rem;
             --success: #10B981;
-            --warning: #F59E0B;
             --info: #3B82F6;
-            --danger: #EF4444;
-            --border-radius-sm: 8px;
-            --border-radius-md: 12px;
-            --border-radius-lg: 16px;
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #f8f9fa;
-            color: var(--primary);
+            background-color: var(--light-bg);
         }
 
-        .Title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 30px;
-            color: var(--primary);
-        }
-
-        /* Sidebar */
+        /* --- Sidebar --- */
         .sidebar {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             min-height: 100vh;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar .nav-link {
-            color: rgba(255, 255, 255, 0.8);
-            border-radius: var(--border-radius-sm);
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            color: white;
-            background-color: rgba(255, 255, 255, 0.1);
-            transform: translateX(4px);
         }
 
         .sidebar h4 {
             font-weight: 600;
-            padding-left: 1rem;
             color: white;
         }
 
-        /* Stats Grid */
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.8rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            margin-bottom: 0.25rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: var(--white);
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        /* --- Main Content --- */
+        .main-content {
+            padding: 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        /* --- Stat Cards --- */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-            margin-bottom: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
 
         .stat-card {
-            background: white;
-            padding: 24px;
-            border-radius: var(--border-radius-lg);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--gray-200);
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
         }
 
         .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-card-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 16px;
+            transform: translateY(-5px);
+            box-shadow: var(--card-shadow);
         }
 
         .stat-icon {
             width: 48px;
             height: 48px;
-            border-radius: var(--border-radius-md);
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 16px;
-            font-size: 20px;
-            color: white;
-        }
-
-        .stat-icon.primary {
-            background: var(--primary);
-        }
-
-        .stat-icon.success {
-            background: var(--success);
-        }
-
-        .stat-icon.info {
-            background: var(--info);
-        }
-
-        .stat-title {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--gray-600);
-            margin: 0;
-        }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary);
-            margin: 0;
-        }
-
-        /* Content Grid */
-        .content-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 24px;
-        }
-
-        .content-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--gray-200);
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .content-card:hover {
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            transform: translateY(-2px);
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            font-size: 1.25rem;
             color: var(--white);
-            padding: 20px 24px;
-            border-bottom: none;
+            flex-shrink: 0;
         }
 
-        .card-body {
-            padding: 24px;
+        .stat-icon.bg-primary {
+            background-color: var(--primary-color);
         }
 
-        /* Table */
-        .table {
-            width: 100%;
-            margin-bottom: 0;
+        .stat-icon.bg-success {
+            background-color: var(--success);
         }
 
-        .table th {
+        .stat-icon.bg-info {
+            background-color: var(--info);
+        }
+
+        .stat-info .stat-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--gray-text);
+            margin: 0;
+        }
+
+        .stat-info .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            line-height: 1.2;
+        }
+
+        /* --- Content Cards --- */
+        .content-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .content-card .card-header {
+            background-color: transparent;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
             font-weight: 600;
-            color: var(--primary);
-            border-bottom: 2px solid var(--gray-200);
-            padding: 16px;
+            color: var(--primary-color);
         }
 
-        .table td {
-            padding: 16px;
-            vertical-align: middle;
-            border-bottom: 1px solid var(--gray-200);
+        .content-card .card-body {
+            padding: 0.5rem;
         }
 
-        .table tbody tr:hover {
-            background-color: var(--gray-100);
-        }
-
-        /* Buttons */
-        .btn {
-            display: inline-flex;
+        /* --- List Group Customization --- */
+        .list-group-item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content-between;
             align-items: center;
-            justify-content: center;
-            padding: 12px 24px;
-            border: none;
-            border-radius: var(--border-radius-sm);
-            font-weight: 500;
-            font-size: 0.875rem;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-height: 44px;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
+        .list-group-item small {
+            color: var(--gray-text);
+            display: block;
+            margin-top: 0.25rem;
         }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, var(--secondary), var(--primary));
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-secondary {
-            background: var(--gray-600);
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: var(--gray-800);
-            transform: translateY(-1px);
-        }
-
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 0.75rem;
-            min-height: 36px;
-        }
-
-        /* Badges */
-        .badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-weight: 500;
-            font-size: 0.75rem;
-        }
-
-        .bg-success {
-            background: rgba(25, 135, 84, 0.1) !important;
-            color: var(--success) !important;
-        }
-
-        .bg-warning {
-            background: rgba(255, 193, 7, 0.1) !important;
-            color: var(--warning) !important;
-        }
-
-        .bg-danger {
-            background: rgba(220, 53, 69, 0.1) !important;
-            color: var(--danger) !important;
-        }
-
-        .bg-info {
-            background: rgba(13, 202, 240, 0.1) !important;
-            color: var(--info) !important;
-        }
-
-        /* Empty State */
+        /* --- Empty State --- */
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
-            color: var(--gray-500);
+            padding: 2rem 1rem;
+            color: var(--gray-text);
         }
 
         .empty-state i {
-            font-size: 48px;
-            margin-bottom: 16px;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
             opacity: 0.5;
         }
 
-        /* Responsive Styles */
-        @media (max-width: 768px) {
+        /* --- Mobile Responsiveness --- */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1100;
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+        }
+
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1049;
+        }
+
+        @media (max-width: 991.98px) {
             .sidebar {
                 position: fixed;
-                left: -280px;
                 top: 0;
-                bottom: 0;
-
-                width: 280px;
-                z-index: 1000;
-                transition: all 0.3s ease-in-out;
-            }
-
-            .sidebar.active {
                 left: 0;
+                height: 100vh;
+                width: 280px;
+                z-index: 1050;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
             }
 
-            .content-wrapper {
-                margin-left: 0 !important;
+            .sidebar.is-open {
+                transform: translateX(0);
+            }
+
+            .sidebar-backdrop.is-visible {
+                display: block;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .main-content {
                 padding: 1rem;
+            }
+
+            .page-title {
+                margin-top: 3.5rem;
+                font-size: 1.5rem;
+            }
+
+            .list-group-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .list-group-item .btn {
+                width: 100%;
             }
         }
     </style>
@@ -423,268 +367,207 @@ $upcoming_tasks = $stmt->fetchAll();
 <body>
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0 sidebar">
+            <button class="mobile-menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+            <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+            <div class="col-md-3 col-lg-2 px-0 sidebar" id="sidebar">
                 <div class="p-3">
-                    <h4><i class="fas fa-chart-line me-2"></i>StatiCore</h4>
-                    <hr>
+                    <h4 class="px-2 my-3"><i class="fas fa-chart-line me-2"></i>StatiCore</h4>
+                    <hr class="text-white">
                     <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link active" href="dashboard.php">
-                                <i class="fas fa-home me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <!-- <li class="nav-item">
-                            <a class="nav-link" href="detail_kelas.php">
-                                <i class="fas fa-chalkboard me-2"></i>Kelas
-                            </a>
-                        </li> -->
-                        <li class="nav-item">
-                            <a class="nav-link" href="materi.php">
-                                <i class="fas fa-book me-2"></i>Materi
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="quiz.php">
-                                <i class="fas fa-question-circle me-2"></i>Quiz
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="tugas.php">
-                                <i class="fas fa-tasks me-2"></i>Tugas
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="nilai.php">
-                                <i class="fas fa-star me-2"></i>Nilai
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="../../logout.php" id="logoutBtn">
-                                <i class="fas fa-sign-out-alt me-2"></i>Logout
-                            </a>
-                        </li>
+                        <li class="nav-item"><a class="nav-link active" href="dashboard.php"><i
+                                    class="fas fa-home fa-fw"></i>Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="materi.php"><i
+                                    class="fas fa-book fa-fw"></i>Materi</a></li>
+                        <li class="nav-item"><a class="nav-link" href="quiz.php"><i
+                                    class="fas fa-question-circle fa-fw"></i>Quiz</a></li>
+                        <li class="nav-item"><a class="nav-link" href="tugas.php"><i
+                                    class="fas fa-tasks fa-fw"></i>Tugas</a></li>
+                        <li class="nav-item"><a class="nav-link" href="nilai.php"><i
+                                    class="fas fa-star fa-fw"></i>Nilai</a></li>
+                        <li class="nav-item mt-auto"><a class="nav-link" href="../../logout.php" id="logoutBtn"><i
+                                    class="fas fa-sign-out-alt fa-fw"></i>Logout</a></li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 p-4">
-                <div class="mb-4 Title">Dashboard</div>
+            <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
+                <h1 class="page-title">Selamat Datang, <?php echo htmlspecialchars($_SESSION['nama_lengkap']); ?>!</h1>
 
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-card-header">
-                            <div class="stat-icon primary">
-                                <i class="fas fa-chalkboard-teacher"></i>
+                        <div class="stat-icon bg-primary"><i class="fas fa-chalkboard-teacher"></i></div>
+                        <div class="stat-info">
+                            <p class="stat-title">Total Kelas</p>
+                            <h3 class="stat-value"><?php echo count($classes); ?></h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-success"><i class="fas fa-book"></i></div>
+                        <div class="stat-info">
+                            <p class="stat-title">Total Materi</p>
+                            <h3 class="stat-value"><?php echo $total_materi_count; ?></h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-info"><i class="fas fa-question-circle"></i></div>
+                        <div class="stat-info">
+                            <p class="stat-title">Total Quiz</p>
+                            <h3 class="stat-value"><?php echo $total_quiz_count; ?></h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="content-card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Aktivitas Mendatang</h5>
                             </div>
-                            <div>
-                                <p class="stat-title">Total Kelas</p>
-                                <h3 class="stat-value"><?php echo count($classes); ?></h3>
+                            <div class="card-body">
+                                <?php if (empty($upcoming_quizzes) && empty($upcoming_tasks)): ?>
+                                    <div class="empty-state"><i class="fas fa-check-circle"></i>
+                                        <p>Tidak ada quiz atau tugas mendatang.</p>
+                                    </div>
+                                <?php else: ?>
+                                    <ul class="list-group list-group-flush">
+                                        <?php foreach ($upcoming_quizzes as $quiz): ?>
+                                            <li class="list-group-item">
+                                                <div>
+                                                    <strong><i
+                                                            class="fas fa-clipboard-question text-info me-2"></i><?php echo htmlspecialchars($quiz['judul']); ?></strong>
+                                                    <small>Quiz | Batas:
+                                                        <?php echo date('d M Y, H:i', strtotime($quiz['waktu_selesai'])); ?></small>
+                                                </div>
+                                                <a href="kerjakan_quiz.php?id=<?php echo $quiz['id']; ?>"
+                                                    class="btn btn-sm btn-primary">Kerjakan</a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                        <?php foreach ($upcoming_tasks as $task): ?>
+                                            <li class="list-group-item">
+                                                <div>
+                                                    <strong><i
+                                                            class="fas fa-file-alt text-success me-2"></i><?php echo htmlspecialchars($task['judul']); ?></strong>
+                                                    <small>Tugas | Batas:
+                                                        <?php echo date('d M Y, H:i', strtotime($task['batas_pengumpulan'])); ?></small>
+                                                </div>
+                                                <a href="kumpul_tugas.php?id=<?php echo $task['id']; ?>"
+                                                    class="btn btn-sm btn-outline-primary">Lihat Tugas</a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
 
-                    <div class="stat-card">
-                        <div class="stat-card-header">
-                            <div class="stat-icon success">
-                                <i class="fas fa-book"></i>
+                    <div class="col-lg-6 mb-4">
+                        <div class="content-card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-book-open me-2"></i>Materi Terbaru</h5>
                             </div>
-                            <div>
-                                <p class="stat-title">Total Materi</p>
-                                <h3 class="stat-value">
-                                    <?php
-                                    $total_materi_count = 0;
-                                    foreach ($classes as $class) {
-                                        $total_materi_count += $class['total_materi'];
-                                    }
-                                    echo $total_materi_count;
-                                    ?>
-                                </h3>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-card-header">
-                            <div class="stat-icon info">
-                                <i class="fas fa-question-circle"></i>
-                            </div>
-                            <div>
-                                <p class="stat-title">Total Quiz</p>
-                                <h3 class="stat-value">
-                                    <?php
-                                    $total_quiz_count = 0;
-                                    foreach ($classes as $class) {
-                                        $total_quiz_count += $class['total_quiz'];
-                                    }
-                                    echo $total_quiz_count;
-                                    ?>
-                                </h3>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-card-header">
-                            <div class="stat-icon primary">
-                                <i class="fas fa-tasks"></i>
-                            </div>
-                            <div>
-                                <p class="stat-title">Total Tugas</p>
-                                <h3 class="stat-value"><?php echo $total_tugas; ?></h3>
+                            <div class="card-body">
+                                <?php if (empty($recent_materials)): ?>
+                                    <div class="empty-state"><i class="fas fa-box-open"></i>
+                                        <p>Belum ada materi terbaru.</p>
+                                    </div>
+                                <?php else: ?>
+                                    <ul class="list-group list-group-flush">
+                                        <?php foreach ($recent_materials as $material): ?>
+                                            <li class="list-group-item">
+                                                <div>
+                                                    <strong><?php echo htmlspecialchars($material['judul']); ?></strong>
+                                                    <small>Di kelas:
+                                                        <?php echo htmlspecialchars($material['nama_kelas']); ?></small>
+                                                </div>
+                                                <a href="detail_materi.php?id=<?php echo $material['id']; ?>"
+                                                    class="btn btn-sm btn-outline-primary">Lihat Materi</a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="content-grid">
-                    <div class="content-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0"><i class="fas fa-book-open me-2"></i>Materi Terbaru</h5>
-                        </div>
-                        <div class="card-body">
-                            <?php if (empty($recent_materials)): ?>
-                                <div class="empty-state">
-                                    <i class="fas fa-box-open"></i>
-                                    <p>Belum ada materi terbaru.</p>
-                                </div>
-                            <?php else: ?>
-                                <ul class="list-group list-group-flush">
-                                    <?php foreach ($recent_materials as $material): ?>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong><?php echo htmlspecialchars($material['judul']); ?></strong>
-                                                <br><small class="text-muted">Kelas:
-                                                    <?php echo htmlspecialchars($material['nama_kelas']); ?> - Guru:
-                                                    <?php echo htmlspecialchars($material['guru_nama']); ?></small>
-                                            </div>
-                                            <a href="detail_materi.php?id=<?php echo $material['id']; ?>"
-                                                class="btn btn-sm btn-primary">Lihat</a>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="content-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0"><i class="fas fa-calendar-alt me-2"></i>Quiz Mendatang</h5>
-                        </div>
-                        <div class="card-body">
-                            <?php if (empty($upcoming_quizzes)): ?>
-                                <div class="empty-state">
-                                    <i class="fas fa-clipboard-question"></i>
-                                    <p>Tidak ada quiz mendatang.</p>
-                                </div>
-                            <?php else: ?>
-                                <ul class="list-group list-group-flush">
-                                    <?php foreach ($upcoming_quizzes as $quiz): ?>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong><?php echo htmlspecialchars($quiz['judul']); ?></strong>
-                                                <br><small class="text-muted">Kelas:
-                                                    <?php echo htmlspecialchars($quiz['nama_kelas']); ?> | Mulai:
-                                                    <?php echo date('d M H:i', strtotime($quiz['waktu_mulai'])); ?> | Durasi:
-                                                    <?php echo htmlspecialchars($quiz['durasi']); ?> menit</small>
-                                            </div>
-                                            <a href="kerjakan_quiz.php?id=<?php echo $quiz['id']; ?>"
-                                                class="btn btn-sm btn-primary">Kerjakan</a>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="content-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0"><i class="fas fa-tasks me-2"></i>Tugas Mendatang</h5>
-                        </div>
-                        <div class="card-body">
-                            <?php if (empty($upcoming_tasks)): ?>
-                                <div class="empty-state">
-                                    <i class="fas fa-clipboard-list"></i>
-                                    <p>Tidak ada tugas mendatang.</p>
-                                </div>
-                            <?php else: ?>
-                                <ul class="list-group list-group-flush">
-                                    <?php foreach ($upcoming_tasks as $task): ?>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong><?php echo htmlspecialchars($task['judul']); ?></strong>
-                                                <br><small class="text-muted">Kelas:
-                                                    <?php echo htmlspecialchars($task['nama_kelas']); ?> | Batas:
-                                                    <?php echo date('d M H:i', strtotime($task['batas_pengumpulan'])); ?></small>
-                                            </div>
-                                            <a href="kumpul_tugas.php?id=<?php echo $task['id']; ?>"
-                                                class="btn btn-sm btn-primary">Detail</a>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="content-card mt-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0"><i class="fas fa-graduation-cap me-2"></i>Hasil Quiz Terbaru</h5>
-                    </div>
-                    <div class="card-body">
-                        <?php if (empty($quiz_results)): ?>
-                            <div class="empty-state">
-                                <i class="fas fa-poll"></i>
-                                <p>Belum ada hasil quiz.</p>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="content-card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-poll me-2"></i>Hasil Quiz Terbaru</h5>
                             </div>
-                        <?php else: ?>
-                            <ul class="list-group list-group-flush">
-                                <?php foreach ($quiz_results as $result): ?>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong><?php echo htmlspecialchars($result['judul']); ?></strong>
-                                            <br><small class="text-muted">Kelas:
-                                                <?php echo htmlspecialchars($result['nama_kelas']); ?> | Nilai:
-                                                <?php echo number_format($result['nilai_rata_rata'], 2); ?></small>
-                                        </div>
-                                        <a href="detail_quiz.php?id=<?php echo $result['id']; ?>"
-                                            class="btn btn-sm btn-secondary">Detail</a>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        <?php endif; ?>
+                            <div class="card-body">
+                                <?php if (empty($quiz_results)): ?>
+                                    <div class="empty-state"><i class="fas fa-chart-pie"></i>
+                                        <p>Belum ada hasil quiz yang bisa ditampilkan.</p>
+                                    </div>
+                                <?php else: ?>
+                                    <ul class="list-group list-group-flush">
+                                        <?php foreach ($quiz_results as $result): ?>
+                                            <li class="list-group-item">
+                                                <div>
+                                                    <strong><?php echo htmlspecialchars($result['judul']); ?></strong>
+                                                    <small>Kelas: <?php echo htmlspecialchars($result['nama_kelas']); ?></small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge fs-6 rounded-pill text-bg-primary">
+                                                        Nilai:
+                                                        <?php echo $result['nilai'] !== null ? htmlspecialchars($result['nilai']) : 'N/A'; ?>
+                                                    </span>
+                                                </div>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+
+            </main>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        // Logout confirmation
         document.addEventListener('DOMContentLoaded', function () {
+            // Mobile Sidebar Toggle
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+            const openSidebar = () => {
+                sidebar.classList.add('is-open');
+                sidebarBackdrop.classList.add('is-visible');
+            };
+            const closeSidebar = () => {
+                sidebar.classList.remove('is-open');
+                sidebarBackdrop.classList.remove('is-visible');
+            };
+
+            if (menuToggle) menuToggle.addEventListener('click', openSidebar);
+            if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
+
+            // Logout Confirmation
             const logoutLink = document.getElementById('logoutBtn');
             if (logoutLink) {
                 logoutLink.addEventListener('click', function (e) {
                     e.preventDefault();
-
                     Swal.fire({
-                        title: 'Apakah Anda ingin keluar?',
-                        text: "Anda akan meninggalkan sesi ini.",
+                        title: 'Apakah Anda yakin?',
+                        text: "Anda akan keluar dari sesi ini.",
                         icon: 'warning',
                         showCancelButton: true,
-                        confirmButtonColor: '#2c5282',
-                        cancelButtonColor: '#6c757d',
+                        confirmButtonColor: 'var(--primary-color)',
+                        cancelButtonColor: 'var(--gray-text)',
                         confirmButtonText: 'Ya, Keluar',
                         cancelButtonText: 'Batal'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = '../../logout.php';
+                            window.location.href = logoutLink.href;
                         }
                     });
                 });
